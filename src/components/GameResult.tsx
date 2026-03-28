@@ -1,13 +1,12 @@
 import { useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import type { GameResultProps } from "@/types/components";
 
 export default function GameResult({
   winner,
   mySymbol,
   reason,
+  onLeave,
 }: GameResultProps) {
-  const navigate = useNavigate();
   const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -91,13 +90,13 @@ export default function GameResult({
 
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
         <button
-          onClick={() => navigate("/home")}
+          onClick={onLeave}
           className="rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 active:bg-indigo-800"
         >
           Play Again
         </button>
         <button
-          onClick={() => navigate("/home")}
+          onClick={onLeave}
           className="rounded-lg border border-gray-300 px-6 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100 active:bg-gray-200 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800 dark:active:bg-gray-700"
         >
           Back to Home
