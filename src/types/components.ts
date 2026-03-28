@@ -12,7 +12,7 @@ import type {
   WinnerValue,
   WinningLine,
 } from "@/types/game";
-import type { LeaderboardRecord } from "@/types/leaderboard";
+import type { LeaderboardRecord, PlayerStats } from "@/types/leaderboard";
 
 // --- Board & Cell -----------------------------------------------------------
 
@@ -39,6 +39,12 @@ export interface GameResultProps {
   mySymbol: PlayerSymbol | null;
   reason?: string;
   onLeave: () => void;
+  /** Updated player stats fetched after game over */
+  stats?: PlayerStats | null;
+  /** Player's global rank */
+  rank?: number | null;
+  /** Whether stats are currently loading */
+  statsLoading?: boolean;
 }
 
 // --- Player card & timer ----------------------------------------------------

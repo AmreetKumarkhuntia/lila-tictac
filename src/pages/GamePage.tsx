@@ -1,13 +1,17 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useMatch } from "@/hooks/useMatch";
 import { useGameStore } from "@/store/gameStore";
 import { useUiStore } from "@/store/uiStore";
+import { useAuthStore } from "@/store/authStore";
 import { clearPersistedMatchId } from "@/hooks/useConnectionStatus";
+import { nakamaClient } from "@/lib/nakama";
+import { LEADERBOARD_ID } from "@/lib/constants";
 import Board from "@/components/Board";
 import PlayerCard from "@/components/PlayerCard";
 import GameResult from "@/components/GameResult";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import type { PlayerStats } from "@/types/leaderboard";
 
 export default function GamePage() {
   const { matchId } = useParams<{ matchId: string }>();
@@ -31,11 +35,52 @@ export default function GamePage() {
 
   const isLoading = useUiStore((s) => s.isLoading);
   const error = useUiStore((s) => s.error);
+  const session = useAuthStore((s) => s.session);
+
+  // Post-match stats
+  const [postMatchStats, setPostMatchStats] = useState<PlayerStats | null>(null);
+  const [postMatchRank, setPostMatchRank] = useState<number | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const statsFetched = useRef(false);
 
   // Derived state
   const isMyTurn = currentPlayer === mySymbol && status === "playing";
   const isGameOver = status === "finished";
   const isWaiting = status === "waiting";
+
+  // Fetch post-match stats once the game ends
+  useEffect(() => {
+    if (status !== "finished" || statsFetched.current || !session) return;
+    statsFetched.current = true;
+    setStatsLoading(true);
+
+    (async () => {
+      try {
+        const [statsResult, aroundOwnerResult] = await Promise.all([
+          nakamaClient.rpc(session, "get_player_stats", {}),
+          nakamaClient.listLeaderboardRecordsAroundOwner(
+            session,
+            LEADERBOARD_ID,
+            session.user_id!,
+            1,
+          ),
+        ]);
+
+        if (statsResult.payload) {
+          setPostMatchStats(statsResult.payload as PlayerStats);
+        }
+
+        const ownerRecords = aroundOwnerResult.owner_records ?? [];
+        if (ownerRecords[0]) {
+          setPostMatchRank(ownerRecords[0].rank ?? null);
+        }
+      } catch (err) {
+        console.error("Failed to fetch post-match stats:", err);
+      } finally {
+        setStatsLoading(false);
+      }
+    })();
+  }, [status, session]);
 
   // Redirect to home if the match was terminated (storeMatchId becomes null
   // after the MATCH_TERMINATED handler resets the game store).
@@ -190,6 +235,9 @@ export default function GamePage() {
             mySymbol={mySymbol}
             reason={gameOverReason ?? undefined}
             onLeave={handleLeave}
+            stats={postMatchStats}
+            rank={postMatchRank}
+            statsLoading={statsLoading}
           />
         </div>
       )}
