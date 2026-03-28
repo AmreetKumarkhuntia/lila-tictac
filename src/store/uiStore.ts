@@ -1,6 +1,13 @@
 import { create } from "zustand";
 
 export type Theme = "light" | "dark";
+export type ToastType = "success" | "error" | "info";
+
+export interface Toast {
+  id: string;
+  message: string;
+  type: ToastType;
+}
 
 function getInitialTheme(): Theme {
   const stored = localStorage.getItem("theme");
@@ -19,21 +26,27 @@ function applyThemeClass(theme: Theme) {
 // Apply on module load so there's no flash of wrong theme
 applyThemeClass(getInitialTheme());
 
+let toastCounter = 0;
+
 interface UiState {
   isLoading: boolean;
   error: string | null;
   theme: Theme;
+  toasts: Toast[];
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   clearError: () => void;
   toggleTheme: () => void;
   setTheme: (theme: Theme) => void;
+  addToast: (message: string, type: ToastType) => void;
+  removeToast: (id: string) => void;
 }
 
 export const useUiStore = create<UiState>((set, get) => ({
   isLoading: false,
   error: null,
   theme: getInitialTheme(),
+  toasts: [],
   setLoading: (isLoading) => set({ isLoading }),
   setError: (error) => set({ error, isLoading: false }),
   clearError: () => set({ error: null }),
@@ -47,5 +60,18 @@ export const useUiStore = create<UiState>((set, get) => ({
     localStorage.setItem("theme", theme);
     applyThemeClass(theme);
     set({ theme });
+  },
+  addToast: (message, type) => {
+    const id = `toast-${++toastCounter}-${Date.now()}`;
+    const toast: Toast = { id, message, type };
+    set((state) => ({ toasts: [...state.toasts, toast] }));
+
+    // Auto-remove after 4 seconds
+    setTimeout(() => {
+      get().removeToast(id);
+    }, 4000);
+  },
+  removeToast: (id) => {
+    set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }));
   },
 }));

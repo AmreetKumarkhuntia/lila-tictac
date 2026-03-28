@@ -58,7 +58,7 @@ export function useMatch() {
 
       case OP_CODE.ERROR: {
         const data: ErrorMessage = JSON.parse(payload);
-        useUiStore.getState().setError(data.message);
+        useUiStore.getState().addToast(data.message, "error");
         break;
       }
 

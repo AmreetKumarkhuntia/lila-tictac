@@ -7,6 +7,7 @@ import HomePage from "@/pages/HomePage";
 import GamePage from "@/pages/GamePage";
 import LeaderboardPage from "@/pages/LeaderboardPage";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import ToastContainer from "@/components/ToastContainer";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -66,6 +67,7 @@ export default function App() {
           />
           <Route path="*" element={<Navigate to="/auth" replace />} />
         </Routes>
+        <ToastContainer />
       </SessionGate>
     </BrowserRouter>
   );
