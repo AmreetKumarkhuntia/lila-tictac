@@ -1,10 +1,3 @@
-// ============================================================
-// Server-side constants for tic-tac-toe match handler.
-// These constants are intentionally independent from the
-// frontend constants in src/lib/constants.ts.
-// ============================================================
-
-// Op codes — client-server message protocol
 const OP_MOVE = 1;
 
 const OP_STATE_UPDATE = 10;
@@ -15,16 +8,13 @@ const OP_OPPONENT_LEFT = 14;
 const OP_MATCH_TERMINATED = 15;
 const OP_OPPONENT_RECONNECTED = 16;
 
-// Nakama storage / leaderboard identifiers
 const LEADERBOARD_ID = "tic-tac-toe-wins";
 const STATS_COLLECTION = "player_stats";
 const STATS_KEY = "summary";
 
-// Scoring
 const SCORE_WIN = 3;
 const SCORE_DRAW = 1;
 
-// Reconnection grace period
 const RECONNECT_GRACE_SECONDS = 15;
 const GRACE_TICK_RATE = 5;
 

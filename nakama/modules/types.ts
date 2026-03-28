@@ -1,9 +1,3 @@
-// ============================================================
-// Server-side type definitions for tic-tac-toe match handler.
-// These types are intentionally independent from the frontend
-// types in src/types/ — the two codebases will be segregated.
-// ============================================================
-
 type PlayerSymbol = "X" | "O";
 type CellValue = "" | "X" | "O";
 type GameMode = "classic" | "timed";
@@ -19,7 +13,6 @@ interface PlayerTimers {
 interface DisconnectedPlayer {
   userId: string;
   symbol: PlayerSymbol;
-  /** Tick at which the player disconnected — used to compute grace elapsed */
   disconnectedAtTick: number;
 }
 
@@ -40,7 +33,6 @@ interface GameState {
   startedAt: number | null;
   finishedAt: number | null;
   timers: PlayerTimers | null;
-  /** Set when a player disconnects mid-game; cleared on reconnect or grace expiry */
   disconnected: DisconnectedPlayer | null;
   /** Original tick rate before grace period override (used to restore after reconnect) */
   originalTickRate: number;
