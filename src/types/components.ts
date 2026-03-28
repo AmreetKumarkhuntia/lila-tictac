@@ -38,6 +38,7 @@ export interface GameResultProps {
   winner: WinnerValue;
   mySymbol: PlayerSymbol | null;
   reason?: string;
+  onLeave: () => void;
 }
 
 // --- Player card & timer ----------------------------------------------------

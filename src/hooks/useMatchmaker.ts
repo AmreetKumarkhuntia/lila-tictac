@@ -1,10 +1,12 @@
 import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { nakamaClient, getSocket, disconnectSocket } from "@/lib/nakama";
+import { handleMatchData } from "@/lib/matchDataHandler";
 import { useAuthStore } from "@/store/authStore";
 import { useGameStore } from "@/store/gameStore";
 import { useUiStore } from "@/store/uiStore";
 import type { GameMode } from "@/types/game";
+import { MatchmakerMatched } from "@heroiclabs/nakama-js";
 
 /**
  * useMatchmaker — manages the matchmaker ticket lifecycle for Quick Play.
@@ -46,7 +48,7 @@ export function useMatchmaker() {
         console.log("[matchmaker] socket connected");
 
         // Wire up the matched callback before adding the ticket
-        socket.onmatchmakermatched = async (matched) => {
+        socket.onmatchmakermatched = async (matched: MatchmakerMatched) => {
           console.log("[matchmaker] onmatchmakermatched fired", {
             match_id: matched.match_id,
             token: matched.token,
@@ -65,8 +67,11 @@ export function useMatchmaker() {
           }
 
           try {
-            // Join the match via the socket (handlers will be wired by useMatch
-            // when the GamePage mounts — for now we just need the match ID)
+            // Wire the match-data handler BEFORE joining so that the
+            // GAME_START message the server sends immediately on join
+            // is captured (fixes the Quick Play symbol-assignment race).
+            socket.onmatchdata = handleMatchData;
+
             console.log("[matchmaker] joining match", matched.match_id);
             const match = await socket.joinMatch(matched.match_id);
             console.log("[matchmaker] joined match successfully", match.match_id);

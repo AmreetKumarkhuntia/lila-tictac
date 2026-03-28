@@ -189,6 +189,7 @@ export default function GamePage() {
             winner={winner}
             mySymbol={mySymbol}
             reason={gameOverReason ?? undefined}
+            onLeave={handleLeave}
           />
         </div>
       )}
