@@ -15,20 +15,16 @@ function persistSession(session: Session, deviceId: string) {
   localStorage.setItem("nakamaSession", session.token);
   localStorage.setItem("nakamaRefreshToken", session.refresh_token);
   localStorage.setItem("deviceId", deviceId);
+  if (session.username) {
+    localStorage.setItem("nakamaUsername", session.username);
+  }
 }
 
-function restoreSession(): { session: Session; deviceId: string } | null {
-  const token = localStorage.getItem("nakamaSession");
-  const refreshToken = localStorage.getItem("nakamaRefreshToken");
-  const deviceId = localStorage.getItem("deviceId");
-  if (!token || !refreshToken || !deviceId) return null;
-  try {
-    const session = Session.restore(token, refreshToken);
-    if (session.isexpired(Date.now() / 1000)) return null;
-    return { session, deviceId };
-  } catch {
-    return null;
-  }
+function clearPersistedSession() {
+  localStorage.removeItem("nakamaSession");
+  localStorage.removeItem("nakamaRefreshToken");
+  localStorage.removeItem("deviceId");
+  localStorage.removeItem("nakamaUsername");
 }
 
 export function useNakama() {
@@ -45,21 +41,42 @@ export function useNakama() {
     setSession(newSession, deviceId, username);
   };
 
-  const restore = () => {
-    const restored = restoreSession();
-    if (restored) {
-      setSession(
-        restored.session,
-        restored.deviceId,
-        restored.session.username ?? "",
-      );
+  const restore = async (): Promise<boolean> => {
+    const token = localStorage.getItem("nakamaSession");
+    const refreshToken = localStorage.getItem("nakamaRefreshToken");
+    const deviceId = localStorage.getItem("deviceId");
+
+    if (!token || !refreshToken || !deviceId) return false;
+
+    try {
+      let restoredSession = Session.restore(token, refreshToken);
+
+      // If the access token is expired, attempt a refresh
+      if (restoredSession.isexpired(Date.now() / 1000)) {
+        try {
+          restoredSession = await nakamaClient.sessionRefresh(restoredSession);
+          persistSession(restoredSession, deviceId);
+        } catch {
+          // Refresh failed — session is truly expired
+          clearPersistedSession();
+          return false;
+        }
+      }
+
+      const username =
+        restoredSession.username ??
+        localStorage.getItem("nakamaUsername") ??
+        "";
+      setSession(restoredSession, deviceId, username);
+      return true;
+    } catch {
+      clearPersistedSession();
+      return false;
     }
   };
 
   const logout = () => {
-    localStorage.removeItem("nakamaSession");
-    localStorage.removeItem("nakamaRefreshToken");
-    localStorage.removeItem("deviceId");
+    clearPersistedSession();
     clearSession();
   };
 
