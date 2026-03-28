@@ -13,9 +13,17 @@ services:
       retries: 5
 
   nakama:
-    build:
-      context: .
-      dockerfile: nakama/Dockerfile
+    image: registry.heroiclabs.com/heroiclabs/nakama:3.38.0
+    restart: unless-stopped
+    entrypoint:
+      - "/bin/sh"
+      - "-ecx"
+      - >
+        /nakama/nakama migrate up --database.address nakama:nakama@postgres:5432/nakama &&
+        exec /nakama/nakama
+        --name nakama1
+        --database.address nakama:nakama@postgres:5432/nakama
+        --config /nakama/data/local.yml
     ports:
       - "7349:7349"
       - "7350:7350"
@@ -23,25 +31,13 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    environment:
-      NAKAMA_DB_HOST: postgres
-      NAKAMA_DB_PORT: 5432
-      NAKAMA_DB_NAME: nakama
-      NAKAMA_DB_USER: nakama
-      NAKAMA_DB_PASSWORD: nakama
-    command:
-      - "/nakama/nakama"
-      - "--database.address"
-      - "nakama:nakama@postgres:5432/nakama"
-      - "--logger.level"
-      - "debug"
-      - "--session.token_expiry_sec"
-      - "7200"
-      - "--socket.max_message_size_bytes"
-      - "4096"
+    volumes:
+      - ./nakama/build:/nakama/data/modules/build
+      - ./nakama/local.yml:/nakama/data/local.yml:ro
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:7350/"]
-      interval: 5s
+      test: ["CMD", "/nakama/nakama", "healthcheck"]
+      interval: 10s
+      timeout: 5s
       retries: 5
 
 volumes:

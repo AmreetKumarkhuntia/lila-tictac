@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "strict": false,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "outFile": "./build/index.js",
+    "typeRoots": [
+      "./node_modules"
+    ]
+  },
+  "files": [
+    "./node_modules/nakama-runtime/index.d.ts",
+    "./modules/types.ts",
+    "./modules/constants.ts",
+    "./modules/utils.ts",
+    "./modules/stats.ts",
+    "./modules/rpc.ts",
+    "./modules/match-init.ts",
+    "./modules/match-join.ts",
+    "./modules/match-loop.ts",
+    "./modules/match-leave.ts",
+    "./modules/index.ts"
+  ]
+}

@@ -1,10 +1,37 @@
 import { Client } from "@heroiclabs/nakama-js";
 import type { Session, Socket } from "@heroiclabs/nakama-js";
 
-const host = import.meta.env.VITE_NAKAMA_HOST ?? "127.0.0.1";
-const port = import.meta.env.VITE_NAKAMA_PORT ?? "7350";
-const ssl = import.meta.env.VITE_NAKAMA_SSL === "true";
-const serverKey = import.meta.env.VITE_NAKAMA_SERVER_KEY ?? "defaultkey";
+// ---------------------------------------------------------------------------
+// Connection config
+// If VITE_NAKAMA_URL is set (e.g. "https://xyz.ngrok.io"), it takes
+// precedence and the host/port/ssl are parsed from that URL.
+// Otherwise, fall back to the individual env vars for local development.
+// ---------------------------------------------------------------------------
+
+function parseNakamaConfig() {
+  const rawUrl = import.meta.env.VITE_NAKAMA_URL as string | undefined;
+  if (rawUrl) {
+    const url = new URL(rawUrl);
+    const useSsl = url.protocol === "https:";
+    // Tunnel services (ngrok, Cloudflare) use standard ports (443/80),
+    // which the Nakama client omits when empty string is passed.
+    const port = url.port || (useSsl ? "443" : "80");
+    return {
+      host: url.hostname,
+      port,
+      ssl: useSsl,
+      serverKey: import.meta.env.VITE_NAKAMA_SERVER_KEY ?? "defaultkey",
+    };
+  }
+  return {
+    host: import.meta.env.VITE_NAKAMA_HOST ?? "127.0.0.1",
+    port: import.meta.env.VITE_NAKAMA_PORT ?? "7350",
+    ssl: import.meta.env.VITE_NAKAMA_SSL === "true",
+    serverKey: import.meta.env.VITE_NAKAMA_SERVER_KEY ?? "defaultkey",
+  };
+}
+
+const { host, port, ssl, serverKey } = parseNakamaConfig();
 
 export const nakamaClient = new Client(serverKey, host, port, ssl);
 

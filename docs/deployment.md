@@ -14,6 +14,7 @@
 - Domain name (optional but recommended for SSL)
 - SSH key pair for VM access
 - Docker and Docker Compose installed on VM
+- Node.js >= 18 (to build Nakama modules locally before uploading)
 
 ---
 
@@ -53,10 +54,8 @@
 | 22 | TCP | Your IP | SSH access |
 | 80 | TCP | 0.0.0.0/0 | HTTP (redirect to HTTPS) |
 | 443 | TCP | 0.0.0.0/0 | HTTPS (reverse proxy) |
-| 7350 | TCP | 0.0.0.0/0 | Nakama HTTP API |
-| 7351 | TCP | 0.0.0.0/0 | Nakama WebSocket |
 
-**Note:** In production, ports 7350 and 7351 should be behind the reverse proxy. Expose only 80 and 443 if using Nginx/Caddy.
+> **Note:** Nakama ports 7350/7351 should NOT be exposed directly in production. Route them through the reverse proxy.
 
 ---
 
@@ -81,19 +80,41 @@ docker compose version
 
 ---
 
-## Step 3: Deploy Nakama Server
+## Step 3: Build Nakama Modules
 
-### 3.1 Create Project Directory
+Nakama requires a **single bundled ES5 JavaScript file**. Build it locally before deploying:
 
 ```bash
-mkdir -p /opt/nakama
-cd /opt/nakama
+# On your local machine
+npm run nakama:build
 ```
 
-### 3.2 Production docker-compose.yml
+This compiles `nakama/modules/*.ts` → `nakama/build/index.js`.
+
+---
+
+## Step 4: Deploy Nakama Server
+
+### 4.1 Create Project Directory
+
+```bash
+ssh root@<vm-ip>
+mkdir -p /opt/nakama/build
+```
+
+### 4.2 Upload Files
+
+```bash
+# From local machine — upload the compiled module and config
+scp nakama/build/index.js root@<vm-ip>:/opt/nakama/build/
+scp nakama/local.yml root@<vm-ip>:/opt/nakama/local.yml
+```
+
+### 4.3 Production docker-compose.yml
+
+Create `/opt/nakama/docker-compose.yml` on the VM:
 
 ```yaml
-version: "3"
 services:
   postgres:
     image: postgres:15-alpine
@@ -111,72 +132,62 @@ services:
       retries: 5
 
   nakama:
-    image: heroiclabs/nakama:3.22.0
+    image: registry.heroiclabs.com/heroiclabs/nakama:3.38.0
+    restart: always
     entrypoint:
       - "/bin/sh"
       - "-ecx"
       - >
         /nakama/nakama migrate up --database.address "nakama:<POSTGRES_PASSWORD>@postgres:5432/nakama" &&
-        /nakama/nakama --config /nakama/data/config.yml --database.address "nakama:<POSTGRES_PASSWORD>@postgres:5432/nakama"
+        exec /nakama/nakama
+        --name nakama1
+        --database.address "nakama:<POSTGRES_PASSWORD>@postgres:5432/nakama"
+        --config /nakama/data/local.yml
     depends_on:
       postgres:
         condition: service_healthy
     volumes:
-      - ./config.yml:/nakama/data/config.yml
-      - ./modules:/nakama/data/modules
+      - ./build:/nakama/data/modules/build
+      - ./local.yml:/nakama/data/local.yml:ro
     ports:
       - "7350:7350"
       - "7351:7351"
-    restart: always
+    healthcheck:
+      test: ["CMD", "/nakama/nakama", "healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
 ```
 
-### 3.3 Production config.yml
+### 4.4 Production local.yml
+
+Create `/opt/nakama/local.yml` on the VM (or edit the uploaded copy):
 
 ```yaml
-name: nakama-tictactoe
-
 logger:
   level: "info"
-  stdout: true
+
+runtime:
+  js_entrypoint: "build/index.js"
+  http_key: "<CHANGE_ME_HTTP_KEY>"
 
 console:
-  address: "0.0.0.0:7351"
   username: "admin"
   password: "<CHANGE_ME_CONSOLE_PASSWORD>"
 
 session:
-  token_expiry_sec: 86400      # 24 hours
-  refresh_token_expiry_sec: 604800  # 7 days
+  token_expiry_sec: 86400
+  refresh_token_expiry_sec: 604800
 
 socket:
-  address: "0.0.0.0:7350"
   max_message_size_bytes: 4096
-  read_buffer_size_bytes: 4096
-  write_buffer_size_bytes: 4096
-  outgoing_queue_size: 64
-
-runtime:
-  path: "/nakama/data/modules"
-  http_key: "<CHANGE_ME_HTTP_KEY>"
-
-match:
-  input_queue_size: 64
-  call_queue_size: 64
-  join_attempt_queue_size: 64
-  max_ticks: 0  # unlimited
+  max_request_size_bytes: 131072
 ```
 
-### 3.4 Upload Custom Modules
-
-```bash
-# From local machine
-scp -r nakama/modules root@<vm-ip>:/opt/nakama/modules
-```
-
-### 3.5 Start Nakama
+### 4.5 Start Nakama
 
 ```bash
 cd /opt/nakama
@@ -187,13 +198,18 @@ docker compose logs -f nakama
 curl http://localhost:7350/
 ```
 
+Look for logs confirming module loading:
+```
+Found runtime modules  count=1  modules=[build/index.js]
+```
+
 ---
 
-## Step 4: Configure Reverse Proxy (Caddy)
+## Step 5: Configure Reverse Proxy (Caddy)
 
 Caddy provides automatic SSL via Let's Encrypt.
 
-### 4.1 Install Caddy
+### 5.1 Install Caddy
 
 ```bash
 apt install -y debian-keyring debian-archive-keyring apt-transport-https
@@ -203,36 +219,32 @@ apt update
 apt install caddy
 ```
 
-### 4.2 Caddyfile
+### 5.2 Caddyfile
 
-Replace `tictactoe.yourdomain.com` with your domain. Point your domain's DNS A record to the VM IP.
+Replace `api.yourdomain.com` with your domain. Point your domain's DNS A record to the VM IP.
 
 ```
-tictactoe.yourdomain.com {
-    reverse_proxy localhost:7350
-}
-
-ws.tictactoe.yourdomain.com {
+api.yourdomain.com {
     reverse_proxy localhost:7350
 }
 ```
 
-### 4.3 Restart Caddy
+### 5.3 Restart Caddy
 
 ```bash
 systemctl restart caddy
 
 # Verify SSL
-curl https://tictactoe.yourdomain.com/
+curl https://api.yourdomain.com/
 ```
 
 Caddy automatically provisions and renews SSL certificates.
 
 ---
 
-## Step 5: Deploy Frontend
+## Step 6: Deploy Frontend
 
-### 5.1 Build
+### 6.1 Build
 
 ```bash
 # Local machine
@@ -241,35 +253,43 @@ npm run build
 
 Produces `dist/` directory with static files.
 
-### 5.2 Option A: Vercel (Recommended)
+### 6.2 Configure Environment
 
-```bash
-# Install Vercel CLI
-npm i -g vercel
+Set one of these in your hosting provider's dashboard:
 
-# Deploy
-vercel --prod
-```
+**Option A — Single URL (recommended):**
+- `VITE_NAKAMA_URL` = `https://api.yourdomain.com`
 
-Set environment variables in Vercel dashboard:
-- `VITE_NAKAMA_HOST` = `tictactoe.yourdomain.com`
+**Option B — Individual vars:**
+- `VITE_NAKAMA_HOST` = `api.yourdomain.com`
 - `VITE_NAKAMA_PORT` = `443`
 - `VITE_NAKAMA_SSL` = `true`
 - `VITE_NAKAMA_SERVER_KEY` = your server key
 
-### 5.3 Option B: Netlify
+Both options also need:
+- `VITE_TIMER_SECONDS` = `30`
+
+> **Note:** `VITE_NAKAMA_URL` takes precedence over the individual vars when set.
+
+### 6.3 Option A: Vercel (Recommended)
 
 ```bash
-# Install Netlify CLI
-npm i -g netlify-cli
+npm i -g vercel
+vercel --prod
+```
 
-# Deploy
+Set environment variables in Vercel dashboard.
+
+### 6.4 Option B: Netlify
+
+```bash
+npm i -g netlify-cli
 netlify deploy --prod --dir=dist
 ```
 
-Set the same environment variables in Netlify dashboard.
+Set environment variables in Netlify dashboard.
 
-### 5.4 Option C: Cloudflare Pages
+### 6.5 Option C: Cloudflare Pages
 
 1. Connect GitHub repo to Cloudflare Pages
 2. Build command: `npm run build`
@@ -278,14 +298,15 @@ Set the same environment variables in Netlify dashboard.
 
 ---
 
-## Step 6: Verification Checklist
+## Step 7: Verification Checklist
 
 - [ ] `https://<frontend-url>` loads the app
 - [ ] Player can enter username and authenticate
 - [ ] Two players can find each other via Quick Play
-- [ ] Game plays correctly with state sync
+- [ ] Game plays correctly with real-time state sync
+- [ ] Timer mode works (countdown visible, auto-forfeit on timeout)
 - [ ] Leaderboard updates after game ends
-- [ ] Nakama console accessible at `https://tictactoe.yourdomain.com:7351`
+- [ ] Nakama console accessible at `https://api.yourdomain.com:7351` (or via Caddy)
 - [ ] SSL certificates valid (no browser warnings)
 - [ ] WebSocket connections work (check browser DevTools → Network → WS)
 
@@ -297,20 +318,21 @@ Set the same environment variables in Netlify dashboard.
 
 | Variable | Local | Production |
 |----------|-------|------------|
-| `VITE_NAKAMA_HOST` | `127.0.0.1` | `tictactoe.yourdomain.com` |
-| `VITE_NAKAMA_PORT` | `7350` | `443` |
-| `VITE_NAKAMA_SSL` | `false` | `true` |
+| `VITE_NAKAMA_URL` | _(unset)_ | `https://api.yourdomain.com` |
+| `VITE_NAKAMA_HOST` | `127.0.0.1` | _(use URL instead)_ |
+| `VITE_NAKAMA_PORT` | `7350` | _(use URL instead)_ |
+| `VITE_NAKAMA_SSL` | `false` | _(use URL instead)_ |
 | `VITE_NAKAMA_SERVER_KEY` | `defaultkey` | your server key |
 | `VITE_TIMER_SECONDS` | `30` | `30` |
 
-### Server (config.yml)
+### Server (local.yml)
 
 | Setting | Local | Production |
 |---------|-------|------------|
-| Console password | `password` | Strong unique password |
-| Session token expiry | `86400` | `86400` |
-| Runtime HTTP key | `defaultkey` | Strong unique key |
-| Logger level | `debug` | `info` |
+| Console password | `password` (default) | Strong unique password |
+| Session token expiry | `7200` | `86400` |
+| Runtime HTTP key | _(default)_ | Strong unique key |
+| Logger level | `DEBUG` | `info` |
 | DB password | `nakama` | Strong unique password |
 
 ---
@@ -322,8 +344,13 @@ Set the same environment variables in Netlify dashboard.
 docker compose logs -f nakama --tail=100
 ```
 
-### Restart Nakama (after module changes)
+### Update Nakama Modules
 ```bash
+# On local machine: edit nakama/modules/*.ts, then:
+npm run nakama:build
+scp nakama/build/index.js root@<vm-ip>:/opt/nakama/build/
+
+# On VM:
 cd /opt/nakama
 docker compose restart nakama
 ```
@@ -341,8 +368,15 @@ cat backup.sql | docker compose exec -T postgres psql -U nakama nakama
 ### Update Nakama Version
 ```bash
 cd /opt/nakama
-# Edit docker-compose.yml with new image version
+# Edit docker-compose.yml with new image tag
 docker compose pull nakama
+docker compose up -d
+```
+
+### Full Reset (deletes all data)
+```bash
+cd /opt/nakama
+docker compose down -v
 docker compose up -d
 ```
 
