@@ -19,7 +19,17 @@ export default function GameResult({
   let subtext: string;
   let headingColor: string;
 
-  if (reason === "disconnect") {
+  if (reason === "timeout") {
+    if (winner === mySymbol) {
+      heading = "Time's Up!";
+      subtext = "Your opponent ran out of time. You win!";
+      headingColor = "text-amber-500 dark:text-amber-400";
+    } else {
+      heading = "Time's Up!";
+      subtext = "You ran out of time.";
+      headingColor = "text-rose-500 dark:text-rose-400";
+    }
+  } else if (reason === "forfeit") {
     heading = "Opponent Left";
     subtext = "You win by forfeit!";
     headingColor = "text-amber-500 dark:text-amber-400";

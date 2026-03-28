@@ -24,6 +24,7 @@ interface GameStoreState {
   status: GameStatus;
   timers: PlayerTimers | null;
   winningLine: [number, number][] | null;
+  gameOverReason: string | null;
   matchmakingStatus: MatchmakingStatus;
   matchmakingTicket: string | null;
 }
@@ -42,6 +43,7 @@ interface GameStoreActions {
   setGameOver: (
     winner: "" | PlayerSymbol | "draw",
     winningLine: [number, number][] | null,
+    reason: string | null,
   ) => void;
   setMatchmakingStatus: (status: MatchmakingStatus) => void;
   setMatchmakingTicket: (ticket: string | null) => void;
@@ -60,6 +62,7 @@ const initialState: GameStoreState = {
   status: "waiting",
   timers: null,
   winningLine: null,
+  gameOverReason: null,
   matchmakingStatus: "idle",
   matchmakingTicket: null,
 };
@@ -80,8 +83,8 @@ export const useGameStore = create<GameStoreState & GameStoreActions>((set) => (
     }),
   setGameStart: (players, mode, mySymbol) =>
     set({ players, mode, mySymbol, status: "playing" }),
-  setGameOver: (winner, winningLine) =>
-    set({ winner, winningLine, status: "finished" }),
+  setGameOver: (winner, winningLine, reason) =>
+    set({ winner, winningLine, gameOverReason: reason, status: "finished" }),
   setMatchmakingStatus: (matchmakingStatus) => set({ matchmakingStatus }),
   setMatchmakingTicket: (matchmakingTicket) => set({ matchmakingTicket }),
   resetGame: () => set(initialState),

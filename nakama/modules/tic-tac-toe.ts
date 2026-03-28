@@ -441,8 +441,8 @@ const matchInit: nkruntime.MatchInitFunction = function (
   const label = JSON.stringify({ mode, status: "waiting" });
 
   // tick rate 0 = matchLoop only fires when messages arrive (classic)
-  // tick rate 10 = 10 ticks/sec for timer countdown (timed, activated on game start)
-  const tickRate = 0;
+  // tick rate 10 = 10 ticks/sec for timer countdown (timed)
+  const tickRate = mode === "timed" ? 10 : 0;
 
   logger.info("match created: mode=%s", mode);
   return { state, tickRate, label };
@@ -563,9 +563,25 @@ const matchLoop: nkruntime.MatchLoopFunction = function (
 ): { state: nkruntime.MatchState } | null {
   const gs = state as GameState;
 
-  // --- Timer processing (timed mode only, Phase 7 will fully implement) ---
-  // Placeholder: if timed mode is active, we'd decrement timers here.
-  // For now, timed mode timer countdown is deferred to Phase 7.
+  // --- Timer countdown (timed mode only) ---
+  if (gs.mode === "timed" && gs.status === "playing" && gs.timers) {
+    const elapsed = (tick - gs.timers.lastMoveAt) / 10; // ticks → seconds
+    gs.timers[gs.currentPlayer] -= elapsed;
+    gs.timers.lastMoveAt = tick;
+
+    if (gs.timers[gs.currentPlayer] <= 0) {
+      gs.timers[gs.currentPlayer] = 0;
+      const opponent: PlayerSymbol = gs.currentPlayer === "X" ? "O" : "X";
+      gs.winner = opponent;
+      gs.status = "finished";
+      gs.finishedAt = Date.now();
+      dispatcher.matchLabelUpdate(JSON.stringify({ mode: gs.mode, status: "finished" }));
+      broadcastGameOver(dispatcher, gs, "timeout");
+      submitMatchResult(nk, logger, gs);
+      logger.info("game over: %s timed out, %s wins", gs.currentPlayer, opponent);
+      return { state: gs };
+    }
+  }
 
   // --- Process incoming messages ---
   for (const message of messages) {

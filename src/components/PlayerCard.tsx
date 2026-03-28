@@ -1,10 +1,16 @@
 import type { PlayerInfo, PlayerSymbol } from "@/types/game";
+import TimerDisplay from "@/components/TimerDisplay";
 
 interface PlayerCardProps {
   player: PlayerInfo | null;
   symbol: PlayerSymbol;
   isActive: boolean;
   isCurrentUser: boolean;
+  /** Timer data — only provided when mode is "timed" */
+  timer?: {
+    timeRemaining: number;
+    timeLimit: number;
+  };
 }
 
 export default function PlayerCard({
@@ -12,6 +18,7 @@ export default function PlayerCard({
   symbol,
   isActive,
   isCurrentUser,
+  timer,
 }: PlayerCardProps) {
   const symbolColor =
     symbol === "X"
@@ -50,6 +57,15 @@ export default function PlayerCard({
           )}
         </p>
       </div>
+
+      {/* Timer (timed mode only) */}
+      {timer && (
+        <TimerDisplay
+          timeRemaining={timer.timeRemaining}
+          timeLimit={timer.timeLimit}
+          isActive={isActive}
+        />
+      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMatchmaker } from "@/hooks/useMatchmaker";
 import { useUiStore } from "@/store/uiStore";
+import type { GameMode } from "@/types/game";
 
 interface PrivateMatchModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ type Tab = "create" | "join";
 
 export default function PrivateMatchModal({ isOpen, onClose }: PrivateMatchModalProps) {
   const [tab, setTab] = useState<Tab>("create");
+  const [mode, setMode] = useState<GameMode>("classic");
   const [createdMatchId, setCreatedMatchId] = useState<string | null>(null);
   const [joinInput, setJoinInput] = useState("");
   const [copied, setCopied] = useState(false);
@@ -22,7 +24,7 @@ export default function PrivateMatchModal({ isOpen, onClose }: PrivateMatchModal
   if (!isOpen) return null;
 
   const handleCreate = async () => {
-    const matchId = await createAndJoinPrivateMatch("classic");
+    const matchId = await createAndJoinPrivateMatch(mode);
     if (matchId) {
       setCreatedMatchId(matchId);
       setWaitingForOpponent(true);
@@ -52,6 +54,7 @@ export default function PrivateMatchModal({ isOpen, onClose }: PrivateMatchModal
     setJoinInput("");
     setCopied(false);
     setWaitingForOpponent(false);
+    setMode("classic");
     setTab("create");
     onClose();
   };
@@ -110,9 +113,32 @@ export default function PrivateMatchModal({ isOpen, onClose }: PrivateMatchModal
           <div>
             {!createdMatchId ? (
               <div>
-                <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+                <p className="mb-3 text-sm text-gray-500 dark:text-gray-400">
                   Create a new match and share the ID with a friend.
                 </p>
+                {/* Mode selector */}
+                <div className="mb-3 flex rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
+                  <button
+                    onClick={() => setMode("classic")}
+                    className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                      mode === "classic"
+                        ? "bg-white text-gray-900 shadow dark:bg-gray-700 dark:text-white"
+                        : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    }`}
+                  >
+                    Classic
+                  </button>
+                  <button
+                    onClick={() => setMode("timed")}
+                    className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                      mode === "timed"
+                        ? "bg-white text-gray-900 shadow dark:bg-gray-700 dark:text-white"
+                        : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    }`}
+                  >
+                    Timed (30s)
+                  </button>
+                </div>
                 <button
                   onClick={handleCreate}
                   disabled={isLoading}

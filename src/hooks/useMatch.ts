@@ -52,7 +52,7 @@ export function useMatch() {
 
       case OP_CODE.GAME_OVER: {
         const data: GameOverMessage = JSON.parse(payload);
-        useGameStore.getState().setGameOver(data.winner, data.winningLine);
+        useGameStore.getState().setGameOver(data.winner, data.winningLine, data.reason);
         break;
       }
 
@@ -64,7 +64,7 @@ export function useMatch() {
 
       case OP_CODE.OPPONENT_LEFT: {
         const data: OpponentLeftMessage = JSON.parse(payload);
-        useGameStore.getState().setGameOver(data.winner, null);
+        useGameStore.getState().setGameOver(data.winner, null, "forfeit");
         break;
       }
 

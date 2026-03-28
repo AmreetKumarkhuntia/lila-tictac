@@ -6,6 +6,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useGameStore } from "@/store/gameStore";
 import { useUiStore } from "@/store/uiStore";
 import PrivateMatchModal from "@/components/PrivateMatchModal";
+import type { GameMode } from "@/types/game";
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -15,6 +16,7 @@ export default function HomePage() {
   const { theme, toggleTheme } = useUiStore();
   const matchmakingStatus = useGameStore((s) => s.matchmakingStatus);
   const [showPrivateModal, setShowPrivateModal] = useState(false);
+  const [selectedMode, setSelectedMode] = useState<GameMode>("classic");
 
   const handleLogout = () => {
     logout();
@@ -25,7 +27,7 @@ export default function HomePage() {
     if (matchmakingStatus === "searching") {
       cancelMatchmaking();
     } else {
-      findMatch("classic");
+      findMatch(selectedMode);
     }
   };
 
@@ -74,6 +76,32 @@ export default function HomePage() {
         </p>
 
         <div className="space-y-3">
+          {/* Mode selector */}
+          <div className="flex rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
+            <button
+              onClick={() => setSelectedMode("classic")}
+              disabled={matchmakingStatus !== "idle"}
+              className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition ${
+                selectedMode === "classic"
+                  ? "bg-white text-gray-900 shadow dark:bg-gray-700 dark:text-white"
+                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              } disabled:cursor-not-allowed`}
+            >
+              Classic
+            </button>
+            <button
+              onClick={() => setSelectedMode("timed")}
+              disabled={matchmakingStatus !== "idle"}
+              className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition ${
+                selectedMode === "timed"
+                  ? "bg-white text-gray-900 shadow dark:bg-gray-700 dark:text-white"
+                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              } disabled:cursor-not-allowed`}
+            >
+              Timed (30s)
+            </button>
+          </div>
+
           {/* Quick Play */}
           <button
             onClick={handleQuickPlay}

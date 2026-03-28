@@ -23,6 +23,9 @@ export default function GamePage() {
   const winner = useGameStore((s) => s.winner);
   const status = useGameStore((s) => s.status);
   const winningLine = useGameStore((s) => s.winningLine);
+  const mode = useGameStore((s) => s.mode);
+  const timers = useGameStore((s) => s.timers);
+  const gameOverReason = useGameStore((s) => s.gameOverReason);
 
   const isLoading = useUiStore((s) => s.isLoading);
 
@@ -34,9 +37,14 @@ export default function GamePage() {
   // Determine opponent symbol
   const opponentSymbol = mySymbol === "X" ? "O" : "X";
 
-  // Determine if the opponent disconnected
-  const opponentDisconnected =
-    isGameOver && winner !== "" && winner !== "draw" && winner === mySymbol && winningLine === null;
+  // Timer data for player cards (timed mode only)
+  const isTimed = mode === "timed" && timers !== null;
+  const myTimer = isTimed && mySymbol
+    ? { timeRemaining: timers[mySymbol], timeLimit: timers.timeLimit }
+    : undefined;
+  const opponentTimer = isTimed
+    ? { timeRemaining: timers[opponentSymbol], timeLimit: timers.timeLimit }
+    : undefined;
 
   // Join match on mount if not already joined (e.g. from matchmaker)
   useEffect(() => {
@@ -107,6 +115,7 @@ export default function GamePage() {
           symbol={opponentSymbol}
           isActive={currentPlayer === opponentSymbol && status === "playing"}
           isCurrentUser={false}
+          timer={opponentTimer}
         />
 
         {/* Status bar */}
@@ -141,6 +150,7 @@ export default function GamePage() {
             symbol={mySymbol}
             isActive={isMyTurn}
             isCurrentUser={true}
+            timer={myTimer}
           />
         )}
 
@@ -161,7 +171,7 @@ export default function GamePage() {
           <GameResult
             winner={winner}
             mySymbol={mySymbol}
-            reason={opponentDisconnected ? "disconnect" : undefined}
+            reason={gameOverReason ?? undefined}
           />
         </div>
       )}
