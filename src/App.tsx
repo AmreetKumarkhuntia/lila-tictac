@@ -25,7 +25,7 @@ function SessionGate({ children }: { children: React.ReactNode }) {
 
   if (restoring) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-950">
+      <div className="flex min-h-screen items-center justify-center bg-gray-100 dark:bg-gray-950">
         <LoadingSpinner />
       </div>
     );
