@@ -10,6 +10,8 @@ import type {
 } from "@/types/game";
 import { EMPTY_BOARD } from "@/lib/constants";
 
+export type MatchmakingStatus = "idle" | "searching" | "matched";
+
 interface GameStoreState {
   matchId: string | null;
   board: CellValue[][];
@@ -22,6 +24,8 @@ interface GameStoreState {
   status: GameStatus;
   timers: PlayerTimers | null;
   winningLine: [number, number][] | null;
+  matchmakingStatus: MatchmakingStatus;
+  matchmakingTicket: string | null;
 }
 
 interface GameStoreActions {
@@ -39,6 +43,8 @@ interface GameStoreActions {
     winner: "" | PlayerSymbol | "draw",
     winningLine: [number, number][] | null,
   ) => void;
+  setMatchmakingStatus: (status: MatchmakingStatus) => void;
+  setMatchmakingTicket: (ticket: string | null) => void;
   resetGame: () => void;
 }
 
@@ -54,6 +60,8 @@ const initialState: GameStoreState = {
   status: "waiting",
   timers: null,
   winningLine: null,
+  matchmakingStatus: "idle",
+  matchmakingTicket: null,
 };
 
 export const useGameStore = create<GameStoreState & GameStoreActions>((set) => ({
@@ -74,5 +82,7 @@ export const useGameStore = create<GameStoreState & GameStoreActions>((set) => (
     set({ players, mode, mySymbol, status: "playing" }),
   setGameOver: (winner, winningLine) =>
     set({ winner, winningLine, status: "finished" }),
+  setMatchmakingStatus: (matchmakingStatus) => set({ matchmakingStatus }),
+  setMatchmakingTicket: (matchmakingTicket) => set({ matchmakingTicket }),
   resetGame: () => set(initialState),
 }));

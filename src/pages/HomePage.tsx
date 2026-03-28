@@ -1,17 +1,32 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useNakama } from "@/hooks/useNakama";
+import { useMatchmaker } from "@/hooks/useMatchmaker";
 import { useAuthStore } from "@/store/authStore";
+import { useGameStore } from "@/store/gameStore";
 import { useUiStore } from "@/store/uiStore";
+import PrivateMatchModal from "@/components/PrivateMatchModal";
 
 export default function HomePage() {
   const navigate = useNavigate();
   const { logout } = useNakama();
+  const { findMatch, cancelMatchmaking } = useMatchmaker();
   const username = useAuthStore((s) => s.username);
   const { theme, toggleTheme } = useUiStore();
+  const matchmakingStatus = useGameStore((s) => s.matchmakingStatus);
+  const [showPrivateModal, setShowPrivateModal] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate("/auth", { replace: true });
+  };
+
+  const handleQuickPlay = () => {
+    if (matchmakingStatus === "searching") {
+      cancelMatchmaking();
+    } else {
+      findMatch("classic");
+    }
   };
 
   return (
@@ -59,22 +74,43 @@ export default function HomePage() {
         </p>
 
         <div className="space-y-3">
+          {/* Quick Play */}
           <button
-            disabled
-            className="w-full cursor-not-allowed rounded-lg bg-indigo-600 px-4 py-3 font-semibold text-white opacity-50"
-            title="Coming in Phase 4"
+            onClick={handleQuickPlay}
+            disabled={matchmakingStatus === "matched"}
+            className={`flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 font-semibold text-white transition ${
+              matchmakingStatus === "searching"
+                ? "bg-red-500 hover:bg-red-600"
+                : "bg-indigo-600 hover:bg-indigo-700"
+            } disabled:cursor-not-allowed disabled:opacity-50`}
           >
-            Quick Play
+            {matchmakingStatus === "searching" && (
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+            )}
+            {matchmakingStatus === "searching"
+              ? "Cancel Search"
+              : matchmakingStatus === "matched"
+                ? "Match Found!"
+                : "Quick Play"}
           </button>
 
+          {/* Searching indicator */}
+          {matchmakingStatus === "searching" && (
+            <p className="text-center text-xs text-gray-400 dark:text-gray-500">
+              Searching for an opponent...
+            </p>
+          )}
+
+          {/* Private Match */}
           <button
-            disabled
-            className="w-full cursor-not-allowed rounded-lg border border-gray-300 bg-gray-50 px-4 py-3 font-semibold text-gray-900 opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-            title="Coming in Phase 4"
+            onClick={() => setShowPrivateModal(true)}
+            disabled={matchmakingStatus !== "idle"}
+            className="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-3 font-semibold text-gray-900 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700"
           >
-            Create Private Match
+            Private Match
           </button>
 
+          {/* Leaderboard */}
           <button
             onClick={() => navigate("/leaderboard")}
             className="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-3 font-semibold text-gray-900 transition hover:bg-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700"
@@ -92,6 +128,12 @@ export default function HomePage() {
           </button>
         </div>
       </div>
+
+      {/* Private Match Modal */}
+      <PrivateMatchModal
+        isOpen={showPrivateModal}
+        onClose={() => setShowPrivateModal(false)}
+      />
     </div>
   );
 }

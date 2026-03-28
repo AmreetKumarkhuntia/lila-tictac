@@ -1,6 +1,6 @@
 import { useRef, useCallback, useEffect } from "react";
-import type { Socket, MatchData } from "@heroiclabs/nakama-js";
-import { nakamaClient } from "@/lib/nakama";
+import type { MatchData } from "@heroiclabs/nakama-js";
+import { getSocket, disconnectSocket } from "@/lib/nakama";
 import { useAuthStore } from "@/store/authStore";
 import { useGameStore } from "@/store/gameStore";
 import { useUiStore } from "@/store/uiStore";
@@ -18,7 +18,6 @@ function decodeMatchData(data: Uint8Array): string {
 }
 
 export function useMatch() {
-  const socketRef = useRef<Socket | null>(null);
   const matchIdRef = useRef<string | null>(null);
 
   const session = useAuthStore((s) => s.session);
@@ -89,26 +88,16 @@ export function useMatch() {
       useUiStore.getState().setLoading(true);
 
       try {
-        // Create socket if needed
-        if (!socketRef.current) {
-          const ssl =
-            import.meta.env.VITE_NAKAMA_SSL === "true";
-          socketRef.current = nakamaClient.createSocket(ssl, false);
-        }
+        const socket = await getSocket(session);
 
-        const socket = socketRef.current;
-
-        // Wire up event handlers before connecting
+        // Wire up match-specific event handlers
         socket.onmatchdata = handleMatchData;
 
         socket.ondisconnect = () => {
           console.warn("Socket disconnected");
-          socketRef.current = null;
           matchIdRef.current = null;
         };
 
-        // Connect and join
-        await socket.connect(session, false);
         const match = await socket.joinMatch(matchId);
 
         matchIdRef.current = match.match_id;
@@ -119,7 +108,6 @@ export function useMatch() {
         useUiStore.getState().setError(
           err instanceof Error ? err.message : "Failed to join match",
         );
-        socketRef.current = null;
         matchIdRef.current = null;
       }
     },
@@ -128,63 +116,59 @@ export function useMatch() {
 
   const sendMove = useCallback(
     async (row: number, col: number) => {
-      const socket = socketRef.current;
-      const matchId = matchIdRef.current;
+      if (!session) return;
 
-      if (!socket || !matchId) {
+      const matchId = matchIdRef.current;
+      if (!matchId) {
         console.error("Cannot send move: not connected to a match");
         return;
       }
 
+      const socket = await getSocket(session);
       const data = JSON.stringify({ row, col });
       await socket.sendMatchState(matchId, OP_CODE.MOVE, data);
     },
-    [],
+    [session],
   );
 
   const leaveMatch = useCallback(async () => {
-    const socket = socketRef.current;
     const matchId = matchIdRef.current;
 
-    if (socket && matchId) {
+    if (session && matchId) {
       try {
+        const socket = await getSocket(session);
         await socket.leaveMatch(matchId);
       } catch (err) {
         console.warn("Error leaving match:", err);
       }
     }
 
-    if (socket) {
-      socket.disconnect(false);
-    }
-
-    socketRef.current = null;
+    // Disconnect the shared socket — we're done with this match session
+    disconnectSocket();
     matchIdRef.current = null;
     useGameStore.getState().resetGame();
-  }, []);
+  }, [session]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      const socket = socketRef.current;
       const matchId = matchIdRef.current;
 
-      if (socket && matchId) {
-        socket.leaveMatch(matchId).catch(() => {});
-      }
-      if (socket) {
-        socket.disconnect(false);
+      if (matchId && session) {
+        getSocket(session)
+          .then((socket) => socket.leaveMatch(matchId))
+          .catch(() => {});
       }
 
-      socketRef.current = null;
+      disconnectSocket();
       matchIdRef.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return {
     joinMatch,
     sendMove,
     leaveMatch,
-    socket: socketRef,
   };
 }
