@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useMatch } from "@/hooks/useMatch";
 import { useGameStore } from "@/store/gameStore";
 import { useUiStore } from "@/store/uiStore";
+import { clearPersistedMatchId } from "@/hooks/useConnectionStatus";
 import Board from "@/components/Board";
 import PlayerCard from "@/components/PlayerCard";
 import GameResult from "@/components/GameResult";
@@ -26,13 +27,33 @@ export default function GamePage() {
   const mode = useGameStore((s) => s.mode);
   const timers = useGameStore((s) => s.timers);
   const gameOverReason = useGameStore((s) => s.gameOverReason);
+  const opponentDisconnected = useGameStore((s) => s.opponentDisconnected);
+  const movePending = useGameStore((s) => s.movePending);
 
   const isLoading = useUiStore((s) => s.isLoading);
+  const error = useUiStore((s) => s.error);
 
   // Derived state
   const isMyTurn = currentPlayer === mySymbol && status === "playing";
   const isGameOver = status === "finished";
   const isWaiting = status === "waiting";
+
+  // Redirect to home if the match was terminated (storeMatchId becomes null
+  // after the MATCH_TERMINATED handler resets the game store).
+  useEffect(() => {
+    if (joinAttempted.current && !storeMatchId && !isLoading && !error) {
+      clearPersistedMatchId();
+      navigate("/home", { replace: true });
+    }
+  }, [storeMatchId, isLoading, error, navigate]);
+
+  // Redirect to home on join failure (error set during the join phase).
+  useEffect(() => {
+    if (error && !storeMatchId) {
+      clearPersistedMatchId();
+      navigate("/home", { replace: true });
+    }
+  }, [error, storeMatchId, navigate]);
 
   // Determine opponent symbol
   const opponentSymbol = mySymbol === "X" ? "O" : "X";
@@ -69,20 +90,24 @@ export default function GamePage() {
 
   const handleCellClick = useCallback(
     (row: number, col: number) => {
-      if (!isMyTurn || isGameOver) return;
+      if (!isMyTurn || isGameOver || movePending) return;
+      useGameStore.getState().setMovePending(true);
       sendMove(row, col);
     },
-    [isMyTurn, isGameOver, sendMove],
+    [isMyTurn, isGameOver, movePending, sendMove],
   );
 
   const handleLeave = useCallback(() => {
     leaveMatch();
+    clearPersistedMatchId();
     navigate("/home", { replace: true });
   }, [leaveMatch, navigate]);
 
   // Status text
   let statusText: string;
-  if (isWaiting) {
+  if (opponentDisconnected) {
+    statusText = "Opponent disconnected — waiting for reconnect...";
+  } else if (isWaiting) {
     statusText = "Waiting for opponent...";
   } else if (isGameOver) {
     statusText = "Game Over";
@@ -118,17 +143,19 @@ export default function GamePage() {
           timer={opponentTimer}
         />
 
-        {/* Status bar */}
-        <div className="text-center">
+        {/* Status bar — live region so screen readers announce changes */}
+        <div className="text-center" aria-live="polite" aria-atomic="true">
           <p
             className={`text-sm font-semibold ${
-              isMyTurn
-                ? "text-emerald-600 dark:text-emerald-400"
-                : isGameOver
-                  ? "text-gray-500 dark:text-gray-400"
-                  : isWaiting
-                    ? "animate-pulse text-amber-600 dark:text-amber-400"
-                    : "text-gray-600 dark:text-gray-300"
+              opponentDisconnected
+                ? "animate-pulse text-amber-600 dark:text-amber-400"
+                : isMyTurn
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : isGameOver
+                    ? "text-gray-500 dark:text-gray-400"
+                    : isWaiting
+                      ? "animate-pulse text-amber-600 dark:text-amber-400"
+                      : "text-gray-600 dark:text-gray-300"
             }`}
           >
             {statusText}
@@ -140,7 +167,7 @@ export default function GamePage() {
           board={board}
           onCellClick={handleCellClick}
           winningLine={winningLine}
-          disabled={!isMyTurn || isGameOver || isWaiting}
+          disabled={!isMyTurn || isGameOver || isWaiting || opponentDisconnected || movePending}
         />
 
         {/* Current user card (bottom) */}
@@ -167,7 +194,7 @@ export default function GamePage() {
 
       {/* Game result overlay */}
       {isGameOver && winner !== "" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" role="presentation">
           <GameResult
             winner={winner}
             mySymbol={mySymbol}

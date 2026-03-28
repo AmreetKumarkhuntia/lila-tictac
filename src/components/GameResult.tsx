@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import type { PlayerSymbol } from "@/types/game";
 
@@ -13,6 +14,43 @@ export default function GameResult({
   reason,
 }: GameResultProps) {
   const navigate = useNavigate();
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  // Focus trap and auto-focus
+  useEffect(() => {
+    const el = dialogRef.current;
+    if (!el) return;
+
+    // Auto-focus the first button
+    const firstBtn = el.querySelector<HTMLElement>("button");
+    firstBtn?.focus();
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key !== "Tab" || !el) return;
+
+      const focusable = el.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!first || !last) return;
+
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   // Determine heading text
   let heading: string;
@@ -48,8 +86,14 @@ export default function GameResult({
   }
 
   return (
-    <div className="animate-[fadeIn_200ms_ease-out] rounded-2xl bg-white/95 p-8 text-center shadow-2xl backdrop-blur-sm dark:bg-gray-900/95">
-      <h2 className={`mb-2 text-3xl font-bold ${headingColor}`}>{heading}</h2>
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="game-result-heading"
+      className="animate-[fadeIn_200ms_ease-out] rounded-2xl bg-white/95 p-8 text-center shadow-2xl backdrop-blur-sm dark:bg-gray-900/95"
+    >
+      <h2 id="game-result-heading" className={`mb-2 text-3xl font-bold ${headingColor}`}>{heading}</h2>
       <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
         {subtext}
       </p>

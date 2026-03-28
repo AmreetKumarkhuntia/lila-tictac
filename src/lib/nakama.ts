@@ -17,28 +17,47 @@ export const nakamaClient = new Client(serverKey, host, port, ssl);
 
 let sharedSocket: Socket | null = null;
 let socketConnected = false;
+let connectingPromise: Promise<Socket> | null = null;
 
 /**
  * Get (or create + connect) the shared Nakama socket.
  * Subsequent calls return the same socket as long as it hasn't been
  * explicitly disconnected via `disconnectSocket()`.
+ *
+ * Uses promise deduplication — concurrent callers share the same
+ * in-flight connection attempt instead of creating multiple sockets.
  */
 export async function getSocket(session: Session): Promise<Socket> {
   if (sharedSocket && socketConnected) {
     return sharedSocket;
   }
 
-  sharedSocket = nakamaClient.createSocket(ssl, false);
+  // If a connection is already in progress, wait for it
+  if (connectingPromise) {
+    return connectingPromise;
+  }
 
-  sharedSocket.ondisconnect = () => {
-    socketConnected = false;
-    // Keep the reference so callers can still check, but mark as disconnected.
-    // Callers (hooks) will set their own ondisconnect *after* getSocket resolves.
-  };
+  connectingPromise = (async () => {
+    sharedSocket = nakamaClient.createSocket(ssl, false);
 
-  await sharedSocket.connect(session, false);
-  socketConnected = true;
-  return sharedSocket;
+    sharedSocket.ondisconnect = () => {
+      socketConnected = false;
+      // Keep the reference so callers can still check, but mark as disconnected.
+      // Callers (hooks) will set their own ondisconnect *after* getSocket resolves.
+    };
+
+    await sharedSocket.connect(session, false);
+    socketConnected = true;
+    connectingPromise = null;
+    return sharedSocket;
+  })();
+
+  try {
+    return await connectingPromise;
+  } catch (err) {
+    connectingPromise = null;
+    throw err;
+  }
 }
 
 /**
@@ -51,6 +70,7 @@ export function disconnectSocket() {
     sharedSocket = null;
     socketConnected = false;
   }
+  connectingPromise = null;
 }
 
 /**

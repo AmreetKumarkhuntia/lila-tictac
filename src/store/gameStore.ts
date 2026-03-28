@@ -27,6 +27,8 @@ interface GameStoreState {
   gameOverReason: string | null;
   matchmakingStatus: MatchmakingStatus;
   matchmakingTicket: string | null;
+  opponentDisconnected: boolean;
+  movePending: boolean;
 }
 
 interface GameStoreActions {
@@ -47,6 +49,8 @@ interface GameStoreActions {
   ) => void;
   setMatchmakingStatus: (status: MatchmakingStatus) => void;
   setMatchmakingTicket: (ticket: string | null) => void;
+  setOpponentDisconnected: (disconnected: boolean) => void;
+  setMovePending: (pending: boolean) => void;
   resetGame: () => void;
 }
 
@@ -65,6 +69,8 @@ const initialState: GameStoreState = {
   gameOverReason: null,
   matchmakingStatus: "idle",
   matchmakingTicket: null,
+  opponentDisconnected: false,
+  movePending: false,
 };
 
 export const useGameStore = create<GameStoreState & GameStoreActions>((set) => ({
@@ -80,12 +86,16 @@ export const useGameStore = create<GameStoreState & GameStoreActions>((set) => (
       moveCount: data.moveCount,
       status: data.status,
       timers: data.timers,
+      opponentDisconnected: data.opponentDisconnected ?? false,
+      movePending: false,
     }),
   setGameStart: (players, mode, mySymbol) =>
-    set({ players, mode, mySymbol, status: "playing" }),
+    set({ players, mode, mySymbol, status: "playing", opponentDisconnected: false }),
   setGameOver: (winner, winningLine, reason) =>
     set({ winner, winningLine, gameOverReason: reason, status: "finished" }),
   setMatchmakingStatus: (matchmakingStatus) => set({ matchmakingStatus }),
   setMatchmakingTicket: (matchmakingTicket) => set({ matchmakingTicket }),
+  setOpponentDisconnected: (opponentDisconnected) => set({ opponentDisconnected }),
+  setMovePending: (movePending) => set({ movePending }),
   resetGame: () => set(initialState),
 }));

@@ -15,6 +15,7 @@ const OP_GAME_OVER = 12;
 const OP_ERROR = 13;
 const OP_OPPONENT_LEFT = 14;
 const OP_MATCH_TERMINATED = 15;
+const OP_OPPONENT_RECONNECTED = 16;
 
 const LEADERBOARD_ID = "tic-tac-toe-wins";
 const STATS_COLLECTION = "player_stats";
@@ -23,6 +24,11 @@ const STATS_KEY = "summary";
 // Scoring constants
 const SCORE_WIN = 3;
 const SCORE_DRAW = 1;
+
+// Reconnection grace period (in seconds)
+const RECONNECT_GRACE_SECONDS = 15;
+// Tick rate used during the grace period so matchLoop fires even in classic mode
+const GRACE_TICK_RATE = 5;
 
 const WIN_LINES: number[][] = [
   // Rows
@@ -64,6 +70,13 @@ interface PlayerTimers {
   timeLimit: number;
 }
 
+interface DisconnectedPlayer {
+  userId: string;
+  symbol: PlayerSymbol;
+  /** Tick at which the player disconnected — used to compute grace elapsed */
+  disconnectedAtTick: number;
+}
+
 interface GameState {
   board: CellValue[][];
   currentPlayer: PlayerSymbol;
@@ -81,6 +94,10 @@ interface GameState {
   startedAt: number | null;
   finishedAt: number | null;
   timers: PlayerTimers | null;
+  /** Set when a player disconnects mid-game; cleared on reconnect or grace expiry */
+  disconnected: DisconnectedPlayer | null;
+  /** Original tick rate before grace period override (used to restore after reconnect) */
+  originalTickRate: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -141,6 +158,7 @@ function broadcastState(
     timers: state.timers
       ? { X: state.timers.X, O: state.timers.O, timeLimit: state.timers.timeLimit }
       : null,
+    opponentDisconnected: state.disconnected !== null,
   });
   dispatcher.broadcastMessage(OP_STATE_UPDATE, data);
 }
@@ -436,13 +454,18 @@ const matchInit: nkruntime.MatchInitFunction = function (
     timers: mode === "timed"
       ? { X: 30, O: 30, lastMoveAt: 0, timeLimit: 30 }
       : null,
+    disconnected: null,
+    originalTickRate: mode === "timed" ? 10 : 0,
   };
 
   const label = JSON.stringify({ mode, status: "waiting" });
 
-  // tick rate 0 = matchLoop only fires when messages arrive (classic)
-  // tick rate 10 = 10 ticks/sec for timer countdown (timed)
-  const tickRate = mode === "timed" ? 10 : 0;
+  // Both modes use a non-zero tick rate so the match loop can detect
+  // reconnection grace-period expiry.  Timed mode needs 10 tps for
+  // accurate countdowns; classic mode uses GRACE_TICK_RATE (5 tps) which
+  // is only meaningful during the grace window but costs almost nothing
+  // the rest of the time.
+  const tickRate = mode === "timed" ? 10 : GRACE_TICK_RATE;
 
   logger.info("match created: mode=%s", mode);
   return { state, tickRate, label };
@@ -464,11 +487,21 @@ const matchJoinAttempt: nkruntime.MatchJoinAttemptFunction = function (
     return { state: gs, accept: false, rejectMessage: "Game is already finished" };
   }
 
-  if (gs.players.X !== null && gs.players.O !== null) {
+  // Allow reconnecting players through even if both slots are occupied
+  const isReconnecting = gs.disconnected !== null && gs.disconnected.userId === presence.userId;
+
+  // Prevent the same user from joining twice (different tab / duplicate connection)
+  if (!isReconnecting) {
+    if (gs.players.X === presence.userId || gs.players.O === presence.userId) {
+      return { state: gs, accept: false, rejectMessage: "Already in this match" };
+    }
+  }
+
+  if (!isReconnecting && gs.players.X !== null && gs.players.O !== null) {
     return { state: gs, accept: false, rejectMessage: "Match is full" };
   }
 
-  logger.info("player %s attempting to join", presence.userId);
+  logger.info("player %s attempting to join (reconnect=%s)", presence.userId, isReconnecting ? "yes" : "no");
   return { state: gs, accept: true };
 };
 
@@ -484,6 +517,50 @@ const matchJoin: nkruntime.MatchJoinFunction = function (
   const gs = state as GameState;
 
   for (const presence of presences) {
+    // --- Handle reconnecting player ---
+    if (gs.disconnected !== null && gs.disconnected.userId === presence.userId) {
+      const reconSymbol = gs.disconnected.symbol;
+      logger.info("player %s (%s) reconnected as %s", presence.userId, presence.username, reconSymbol);
+
+      // Restore presence
+      gs.presenceMap[presence.userId] = presence;
+      gs.usernames[presence.userId] = presence.username;
+
+      // Clear disconnected state
+      gs.disconnected = null;
+
+      // Restore tick rate to the original value (undo grace period override)
+      if (gs.originalTickRate !== undefined) {
+        dispatcher.matchKick([]);                        // no-op, just triggers label update ability
+      }
+
+      // Send personalized GAME_START so the client gets its symbol back
+      const playersInfo = {
+        X: { userId: gs.players.X!, username: gs.usernames[gs.players.X!] || "Player X" },
+        O: { userId: gs.players.O!, username: gs.usernames[gs.players.O!] || "Player O" },
+      };
+      dispatcher.broadcastMessage(
+        OP_GAME_START,
+        JSON.stringify({ players: playersInfo, mode: gs.mode, assignedSymbol: reconSymbol }),
+        [presence],
+      );
+
+      // Send current board state so client is in sync
+      broadcastState(dispatcher, gs);
+
+      // Notify the other player that their opponent has reconnected
+      const opponentId = reconSymbol === "X" ? gs.players.O : gs.players.X;
+      if (opponentId && gs.presenceMap[opponentId]) {
+        dispatcher.broadcastMessage(
+          OP_OPPONENT_RECONNECTED,
+          JSON.stringify({ reconnectedSymbol: reconSymbol }),
+          [gs.presenceMap[opponentId]],
+        );
+      }
+
+      continue;
+    }
+
     // Track this presence
     gs.presenceMap[presence.userId] = presence;
 
@@ -562,6 +639,33 @@ const matchLoop: nkruntime.MatchLoopFunction = function (
   messages: nkruntime.MatchMessage[],
 ): { state: nkruntime.MatchState } | null {
   const gs = state as GameState;
+
+  // --- Reconnection grace period check ---
+  if (gs.disconnected !== null && gs.status === "playing") {
+    // Compute the tick rate that is actually active for this match.
+    // During grace period for classic mode, we bump to GRACE_TICK_RATE.
+    const activeTR = gs.mode === "timed" ? 10 : GRACE_TICK_RATE;
+    const elapsedSeconds = (tick - gs.disconnected.disconnectedAtTick) / activeTR;
+
+    if (elapsedSeconds >= RECONNECT_GRACE_SECONDS) {
+      // Grace period expired — forfeit the disconnected player
+      const leavingSymbol = gs.disconnected.symbol;
+      const winnerSymbol: PlayerSymbol = leavingSymbol === "X" ? "O" : "X";
+      gs.winner = winnerSymbol;
+      gs.status = "finished";
+      gs.finishedAt = Date.now();
+      gs.disconnected = null;
+      dispatcher.matchLabelUpdate(JSON.stringify({ mode: gs.mode, status: "finished" }));
+
+      dispatcher.broadcastMessage(
+        OP_OPPONENT_LEFT,
+        JSON.stringify({ winner: winnerSymbol, reason: "disconnect" }),
+      );
+      submitMatchResult(nk, logger, gs);
+      logger.info("grace period expired: %s forfeited, %s wins", leavingSymbol, winnerSymbol);
+      return { state: gs };
+    }
+  }
 
   // --- Timer countdown (timed mode only) ---
   if (gs.mode === "timed" && gs.status === "playing" && gs.timers) {
@@ -732,19 +836,33 @@ const matchLeave: nkruntime.MatchLeaveFunction = function (
     logger.info("player %s (%s) left", presence.userId, leavingSymbol);
 
     if (gs.status === "playing") {
-      // Game in progress — opponent wins by forfeit
-      const winnerSymbol: PlayerSymbol = leavingSymbol === "X" ? "O" : "X";
-      gs.winner = winnerSymbol;
-      gs.status = "finished";
-      gs.finishedAt = Date.now();
-      dispatcher.matchLabelUpdate(JSON.stringify({ mode: gs.mode, status: "finished" }));
+      // Game in progress — start grace period for reconnection instead of
+      // immediately forfeiting.  If a grace period is already active for
+      // the other player (edge case), skip — only one disconnected player
+      // is supported at a time.
+      if (gs.disconnected !== null) {
+        // Both players disconnected — neither wins, just clean up
+        gs.disconnected = null;
+        logger.info("both players disconnected, match will be destroyed");
+      } else {
+        // Start reconnection grace period
+        gs.disconnected = {
+          userId: presence.userId,
+          symbol: leavingSymbol,
+          disconnectedAtTick: tick,
+        };
 
-      dispatcher.broadcastMessage(
-        OP_OPPONENT_LEFT,
-        JSON.stringify({ winner: winnerSymbol, reason: "disconnect" }),
-      );
-      submitMatchResult(nk, logger, gs);
-      logger.info("player %s forfeited, %s wins", leavingSymbol, winnerSymbol);
+        // Notify the remaining player that their opponent disconnected temporarily
+        dispatcher.broadcastMessage(
+          OP_OPPONENT_LEFT,
+          JSON.stringify({ winner: "", reason: "disconnected_temporary" }),
+        );
+
+        logger.info(
+          "player %s (%s) disconnected, grace period started (%ds)",
+          presence.userId, leavingSymbol, RECONNECT_GRACE_SECONDS,
+        );
+      }
     } else if (gs.status === "waiting") {
       // Still in lobby — free the slot for someone else
       gs.players[leavingSymbol] = null;

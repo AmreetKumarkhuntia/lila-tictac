@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useMatchmaker } from "@/hooks/useMatchmaker";
 import { useUiStore } from "@/store/uiStore";
 import type { GameMode } from "@/types/game";
@@ -20,6 +20,58 @@ export default function PrivateMatchModal({ isOpen, onClose }: PrivateMatchModal
 
   const { createAndJoinPrivateMatch, joinPrivateMatch } = useMatchmaker();
   const isLoading = useUiStore((s) => s.isLoading);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  // Focus trap: trap Tab/Shift+Tab inside the modal and handle Escape
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        handleClose();
+        return;
+      }
+      if (e.key !== "Tab" || !dialogRef.current) return;
+
+      const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!first || !last) return;
+
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  // Attach focus trap and auto-focus when modal opens
+  useEffect(() => {
+    if (!isOpen) return;
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    // Auto-focus the first focusable element
+    requestAnimationFrame(() => {
+      const first = dialogRef.current?.querySelector<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
+      first?.focus();
+    });
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen, handleKeyDown]);
 
   if (!isOpen) return null;
 
@@ -60,15 +112,22 @@ export default function PrivateMatchModal({ isOpen, onClose }: PrivateMatchModal
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" role="presentation">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="private-match-title"
+        className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900"
+      >
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+          <h2 id="private-match-title" className="text-lg font-bold text-gray-900 dark:text-white">
             Private Match
           </h2>
           <button
             onClick={handleClose}
+            aria-label="Close dialog"
             className="rounded-lg p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-200"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">

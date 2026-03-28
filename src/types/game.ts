@@ -40,6 +40,7 @@ export interface StateUpdateMessage {
   moveCount: number;
   status: GameStatus;
   timers: PlayerTimers | null;
+  opponentDisconnected?: boolean;
 }
 
 export interface GameStartMessage {
@@ -60,8 +61,12 @@ export interface ErrorMessage {
 }
 
 export interface OpponentLeftMessage {
-  winner: PlayerSymbol;
-  reason: "disconnect";
+  winner: PlayerSymbol | "";
+  reason: "disconnect" | "disconnected_temporary";
+}
+
+export interface OpponentReconnectedMessage {
+  reconnectedSymbol: PlayerSymbol;
 }
 
 export interface PlayerStats {

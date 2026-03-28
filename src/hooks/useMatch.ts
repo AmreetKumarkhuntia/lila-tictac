@@ -1,6 +1,7 @@
 import { useRef, useCallback, useEffect } from "react";
 import type { MatchData } from "@heroiclabs/nakama-js";
 import { getSocket, disconnectSocket } from "@/lib/nakama";
+import { persistMatchId, clearPersistedMatchId } from "@/hooks/useConnectionStatus";
 import { useAuthStore } from "@/store/authStore";
 import { useGameStore } from "@/store/gameStore";
 import { useUiStore } from "@/store/uiStore";
@@ -11,6 +12,7 @@ import type {
   GameOverMessage,
   ErrorMessage,
   OpponentLeftMessage,
+  OpponentReconnectedMessage,
 } from "@/types/game";
 
 function decodeMatchData(data: Uint8Array): string {
@@ -64,12 +66,27 @@ export function useMatch() {
 
       case OP_CODE.OPPONENT_LEFT: {
         const data: OpponentLeftMessage = JSON.parse(payload);
-        useGameStore.getState().setGameOver(data.winner, null, "forfeit");
+        if (data.reason === "disconnected_temporary") {
+          // Opponent disconnected but may reconnect — show waiting state
+          useGameStore.getState().setOpponentDisconnected(true);
+          useUiStore.getState().addToast("Opponent disconnected — waiting for reconnect...", "info");
+        } else {
+          // Permanent disconnect / forfeit
+          useGameStore.getState().setGameOver(data.winner, null, "forfeit");
+        }
+        break;
+      }
+
+      case OP_CODE.OPPONENT_RECONNECTED: {
+        JSON.parse(payload) as OpponentReconnectedMessage;
+        useGameStore.getState().setOpponentDisconnected(false);
+        useUiStore.getState().addToast("Opponent reconnected!", "success");
         break;
       }
 
       case OP_CODE.MATCH_TERMINATED: {
         useGameStore.getState().resetGame();
+        useUiStore.getState().addToast("Match terminated by server", "error");
         break;
       }
 
@@ -102,13 +119,15 @@ export function useMatch() {
 
         matchIdRef.current = match.match_id;
         useGameStore.getState().setMatchId(match.match_id);
+        persistMatchId(match.match_id);
         useUiStore.getState().setLoading(false);
       } catch (err) {
         console.error("Failed to join match:", err);
-        useUiStore.getState().setError(
-          err instanceof Error ? err.message : "Failed to join match",
-        );
+        const message = err instanceof Error ? err.message : "Failed to join match";
+        useUiStore.getState().setError(message);
+        useUiStore.getState().setLoading(false);
         matchIdRef.current = null;
+        clearPersistedMatchId();
       }
     },
     [session, handleMatchData],
@@ -146,6 +165,7 @@ export function useMatch() {
     // Disconnect the shared socket — we're done with this match session
     disconnectSocket();
     matchIdRef.current = null;
+    clearPersistedMatchId();
     useGameStore.getState().resetGame();
   }, [session]);
 
@@ -162,6 +182,7 @@ export function useMatch() {
 
       disconnectSocket();
       matchIdRef.current = null;
+      clearPersistedMatchId();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

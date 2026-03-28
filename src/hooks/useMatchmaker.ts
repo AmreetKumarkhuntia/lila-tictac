@@ -30,9 +30,14 @@ export function useMatchmaker() {
         return;
       }
 
-      const { matchmakingStatus } = useGameStore.getState();
+      const { matchmakingStatus, matchId } = useGameStore.getState();
       if (matchmakingStatus === "searching") {
         return; // Already searching
+      }
+
+      if (matchId) {
+        useUiStore.getState().addToast("You're already in a match", "error");
+        return;
       }
 
       useGameStore.getState().setMatchmakingStatus("searching");
@@ -100,6 +105,8 @@ export function useMatchmaker() {
       try {
         const socket = await getSocket(session);
         await socket.removeMatchmaker(matchmakingTicket);
+        // Clear the matched callback to prevent stale matches from firing
+        socket.onmatchmakermatched = () => {};
       } catch (err) {
         console.warn("Error removing matchmaker ticket:", err);
       }
@@ -140,6 +147,7 @@ export function useMatchmaker() {
         useUiStore.getState().setError(
           err instanceof Error ? err.message : "Failed to create private match",
         );
+        useUiStore.getState().setLoading(false);
         return null;
       }
     },
@@ -157,6 +165,12 @@ export function useMatchmaker() {
         return;
       }
 
+      const { matchId: currentMatchId } = useGameStore.getState();
+      if (currentMatchId) {
+        useUiStore.getState().addToast("You're already in a match", "error");
+        return;
+      }
+
       useUiStore.getState().setLoading(true);
 
       try {
@@ -171,6 +185,7 @@ export function useMatchmaker() {
         useUiStore.getState().setError(
           err instanceof Error ? err.message : "Invalid match ID or match is full",
         );
+        useUiStore.getState().setLoading(false);
       }
     },
     [session, navigate],

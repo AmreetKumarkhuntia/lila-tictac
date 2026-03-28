@@ -6,6 +6,7 @@ export const OP_CODE = {
   ERROR: 13,
   OPPONENT_LEFT: 14,
   MATCH_TERMINATED: 15,
+  OPPONENT_RECONNECTED: 16,
 } as const;
 
 export const WIN_LINES: [number, number][][] = [

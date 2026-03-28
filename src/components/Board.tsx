@@ -25,7 +25,11 @@ export default function Board({
 }: BoardProps) {
   return (
     <div className="mx-auto w-full max-w-[280px] sm:max-w-[360px] lg:max-w-[400px]">
-      <div className="grid grid-cols-3 gap-2 rounded-xl bg-gray-200 p-2 dark:bg-gray-800">
+      <div
+        role="grid"
+        aria-label="Tic-Tac-Toe board"
+        className="grid grid-cols-3 gap-2 rounded-xl bg-gray-200 p-2 dark:bg-gray-800"
+      >
         {board.map((row, rowIdx) =>
           row.map((cell, colIdx) => (
             <Cell

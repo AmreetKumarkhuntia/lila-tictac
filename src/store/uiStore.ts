@@ -48,7 +48,13 @@ export const useUiStore = create<UiState>((set, get) => ({
   theme: getInitialTheme(),
   toasts: [],
   setLoading: (isLoading) => set({ isLoading }),
-  setError: (error) => set({ error, isLoading: false }),
+  setError: (error) => {
+    set({ error, isLoading: false });
+    // Surface the error as a toast so the user always sees it
+    if (error) {
+      get().addToast(error, "error");
+    }
+  },
   clearError: () => set({ error: null }),
   toggleTheme: () => {
     const next = get().theme === "dark" ? "light" : "dark";
