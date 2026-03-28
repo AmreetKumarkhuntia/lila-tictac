@@ -1,5 +1,5 @@
 import { useUiStore } from "@/store/uiStore";
-import type { ToastType } from "@/store/uiStore";
+import type { ToastType } from "@/types/ui";
 
 function toastStyles(type: ToastType): string {
   switch (type) {

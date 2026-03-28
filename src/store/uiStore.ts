@@ -1,13 +1,5 @@
 import { create } from "zustand";
-
-export type Theme = "light" | "dark";
-export type ToastType = "success" | "error" | "info";
-
-export interface Toast {
-  id: string;
-  message: string;
-  type: ToastType;
-}
+import type { Theme, ToastType, Toast } from "@/types/ui";
 
 function getInitialTheme(): Theme {
   const stored = localStorage.getItem("theme");
@@ -72,7 +64,6 @@ export const useUiStore = create<UiState>((set, get) => ({
     const toast: Toast = { id, message, type };
     set((state) => ({ toasts: [...state.toasts, toast] }));
 
-    // Auto-remove after 4 seconds
     setTimeout(() => {
       get().removeToast(id);
     }, 4000);

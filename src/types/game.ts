@@ -2,6 +2,7 @@ export type PlayerSymbol = "X" | "O";
 export type CellValue = "" | "X" | "O";
 export type GameMode = "classic" | "timed";
 export type GameStatus = "waiting" | "playing" | "finished";
+export type MatchmakingStatus = "idle" | "searching" | "matched";
 
 export interface PlayerTimers {
   X: number;

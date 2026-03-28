@@ -20,9 +20,6 @@ export function useMatchmaker() {
   const navigate = useNavigate();
   const session = useAuthStore((s) => s.session);
 
-  /**
-   * Start searching for an opponent via Nakama's matchmaker.
-   */
   const findMatch = useCallback(
     async (mode: GameMode) => {
       if (!session) {
@@ -32,7 +29,7 @@ export function useMatchmaker() {
 
       const { matchmakingStatus, matchId } = useGameStore.getState();
       if (matchmakingStatus === "searching") {
-        return; // Already searching
+        return;
       }
 
       if (matchId) {
@@ -93,9 +90,6 @@ export function useMatchmaker() {
     [session, navigate],
   );
 
-  /**
-   * Cancel an active matchmaking search.
-   */
   const cancelMatchmaking = useCallback(async () => {
     if (!session) return;
 
@@ -154,10 +148,6 @@ export function useMatchmaker() {
     [session],
   );
 
-  /**
-   * Join an existing match by ID (used for private matches).
-   * Connects the shared socket and joins the match, then navigates to the game.
-   */
   const joinPrivateMatch = useCallback(
     async (matchId: string) => {
       if (!session) {

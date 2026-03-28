@@ -51,7 +51,6 @@ export function useNakama() {
     try {
       let restoredSession = Session.restore(token, refreshToken);
 
-      // If the access token is expired, attempt a refresh
       if (restoredSession.isexpired(Date.now() / 1000)) {
         try {
           restoredSession = await nakamaClient.sessionRefresh(restoredSession);

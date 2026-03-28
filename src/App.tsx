@@ -17,10 +17,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// ---------------------------------------------------------------------------
-// Error Boundary — catches render-time crashes and shows a recovery UI
-// ---------------------------------------------------------------------------
-
 interface ErrorBoundaryProps {
   children: ReactNode;
 }
@@ -69,13 +65,10 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 }
 
-// ---------------------------------------------------------------------------
-
 function SessionGate({ children }: { children: React.ReactNode }) {
   const { restore } = useNakama();
   const [restoring, setRestoring] = useState(true);
 
-  // Monitor browser online/offline for connection toasts & socket reconnect
   useConnectionStatus();
 
   useEffect(() => {

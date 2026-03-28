@@ -29,7 +29,6 @@ export default function AuthPage() {
   const [username, setUsername] = useState("");
   const [touched, setTouched] = useState(false);
 
-  // Already authenticated — redirect to home
   if (isAuthenticated) {
     return <Navigate to="/home" replace />;
   }

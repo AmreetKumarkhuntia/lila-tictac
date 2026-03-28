@@ -34,7 +34,6 @@ export default function HomePage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4 text-gray-900 dark:bg-gray-950 dark:text-white">
       <div className="relative w-full max-w-sm rounded-2xl bg-white p-8 shadow-xl dark:bg-gray-900">
-        {/* Theme toggle */}
         <button
           onClick={toggleTheme}
           className="absolute right-4 top-4 rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-200"
@@ -77,7 +76,6 @@ export default function HomePage() {
         </p>
 
         <div className="space-y-3">
-          {/* Mode selector */}
           <div className="flex rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
             <button
               onClick={() => setSelectedMode("classic")}
@@ -103,7 +101,6 @@ export default function HomePage() {
             </button>
           </div>
 
-          {/* Quick Play */}
           <button
             onClick={handleQuickPlay}
             disabled={matchmakingStatus === "matched"}
@@ -123,14 +120,12 @@ export default function HomePage() {
                 : "Quick Play"}
           </button>
 
-          {/* Searching indicator */}
           {matchmakingStatus === "searching" && (
             <p className="text-center text-xs text-gray-400 dark:text-gray-500">
               Searching for an opponent...
             </p>
           )}
 
-          {/* Private Match */}
           <button
             onClick={() => setShowPrivateModal(true)}
             disabled={matchmakingStatus !== "idle"}
@@ -139,7 +134,6 @@ export default function HomePage() {
             Private Match
           </button>
 
-          {/* Leaderboard */}
           <button
             onClick={() => navigate("/leaderboard")}
             className="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-3 font-semibold text-gray-900 transition hover:bg-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700"
@@ -158,7 +152,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Private Match Modal */}
       <PrivateMatchModal
         isOpen={showPrivateModal}
         onClose={() => setShowPrivateModal(false)}

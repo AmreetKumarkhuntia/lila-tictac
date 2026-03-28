@@ -54,13 +54,11 @@ export default function PrivateMatchModal({ isOpen, onClose }: PrivateMatchModal
     [],
   );
 
-  // Attach focus trap and auto-focus when modal opens
   useEffect(() => {
     if (!isOpen) return;
 
     document.addEventListener("keydown", handleKeyDown);
 
-    // Auto-focus the first focusable element
     requestAnimationFrame(() => {
       const first = dialogRef.current?.querySelector<HTMLElement>(
         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
@@ -136,7 +134,6 @@ export default function PrivateMatchModal({ isOpen, onClose }: PrivateMatchModal
           </button>
         </div>
 
-        {/* Tabs */}
         <div className="mb-4 flex rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
           <button
             onClick={() => {
@@ -167,7 +164,6 @@ export default function PrivateMatchModal({ isOpen, onClose }: PrivateMatchModal
           </button>
         </div>
 
-        {/* Create tab */}
         {tab === "create" && (
           <div>
             {!createdMatchId ? (
@@ -175,7 +171,6 @@ export default function PrivateMatchModal({ isOpen, onClose }: PrivateMatchModal
                 <p className="mb-3 text-sm text-gray-500 dark:text-gray-400">
                   Create a new match and share the ID with a friend.
                 </p>
-                {/* Mode selector */}
                 <div className="mb-3 flex rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
                   <button
                     onClick={() => setMode("classic")}
@@ -237,7 +232,6 @@ export default function PrivateMatchModal({ isOpen, onClose }: PrivateMatchModal
           </div>
         )}
 
-        {/* Join tab */}
         {tab === "join" && (
           <div>
             <p className="mb-3 text-sm text-gray-500 dark:text-gray-400">

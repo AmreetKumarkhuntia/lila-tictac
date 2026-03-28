@@ -1,11 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 
 interface TimerDisplayProps {
-  /** Remaining seconds from the server */
   timeRemaining: number;
-  /** Total time limit in seconds */
   timeLimit: number;
-  /** Whether this player's clock is actively ticking */
   isActive: boolean;
 }
 
@@ -25,7 +22,6 @@ export default function TimerDisplay({
   const lastServerTime = useRef(timeRemaining);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Sync to server value whenever it changes
   useEffect(() => {
     lastServerTime.current = timeRemaining;
     setDisplayTime(timeRemaining);
@@ -60,11 +56,9 @@ export default function TimerDisplay({
         intervalRef.current = null;
       }
     };
-    // Re-run when active status or server time changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive, timeRemaining]);
 
-  // Color coding based on remaining time
   let colorClass: string;
   let animateClass = "";
 
@@ -79,10 +73,8 @@ export default function TimerDisplay({
     }
   }
 
-  // Progress bar width
   const progress = timeLimit > 0 ? Math.max(0, displayTime / timeLimit) : 0;
 
-  // Progress bar color
   let barColor: string;
   if (displayTime > 10) {
     barColor = "bg-emerald-500";
@@ -94,14 +86,12 @@ export default function TimerDisplay({
 
   return (
     <div className="flex items-center gap-2">
-      {/* Progress bar */}
       <div className="h-1.5 w-12 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
         <div
           className={`h-full rounded-full transition-all duration-200 ${barColor}`}
           style={{ width: `${progress * 100}%` }}
         />
       </div>
-      {/* Time text */}
       <span
         className={`font-mono text-sm font-bold tabular-nums ${colorClass} ${animateClass}`}
       >

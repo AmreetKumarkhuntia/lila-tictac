@@ -1,12 +1,3 @@
-// ============================================================================
-// Tic-Tac-Toe — Nakama Authoritative Match Handler
-// Phase 3: Server-authoritative game logic with full move validation
-// ============================================================================
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
 const OP_MOVE = 1;
 
 const OP_STATE_UPDATE = 10;
@@ -21,13 +12,11 @@ const LEADERBOARD_ID = "tic-tac-toe-wins";
 const STATS_COLLECTION = "player_stats";
 const STATS_KEY = "summary";
 
-// Scoring constants
 const SCORE_WIN = 3;
 const SCORE_DRAW = 1;
 
 // Reconnection grace period (in seconds)
 const RECONNECT_GRACE_SECONDS = 15;
-// Tick rate used during the grace period so matchLoop fires even in classic mode
 const GRACE_TICK_RATE = 5;
 
 const WIN_LINES: number[][] = [
@@ -53,10 +42,6 @@ const WIN_LINES: number[][] = [
   }
   return acc;
 }, []);
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
 
 type PlayerSymbol = "X" | "O";
 type CellValue = "" | "X" | "O";
@@ -99,10 +84,6 @@ interface GameState {
   /** Original tick rate before grace period override (used to restore after reconnect) */
   originalTickRate: number;
 }
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 function createEmptyBoard(): CellValue[][] {
   return [
@@ -177,10 +158,6 @@ function broadcastGameOver(
   dispatcher.broadcastMessage(OP_GAME_OVER, data);
 }
 
-// ---------------------------------------------------------------------------
-// Player Stats Persistence
-// ---------------------------------------------------------------------------
-
 interface PlayerStatsData {
   wins: number;
   losses: number;
@@ -252,11 +229,9 @@ function submitMatchResult(
 
   const now = Date.now();
 
-  // Read current stats for both players
   const statsX = readPlayerStats(nk, playerXId);
   const statsO = readPlayerStats(nk, playerOId);
 
-  // Determine outcome for each player
   let scoreX = 0;
   let scoreO = 0;
 
@@ -295,11 +270,9 @@ function submitMatchResult(
   statsO.gamesPlayed++;
   statsO.lastMatchAt = now;
 
-  // Write updated stats
   writePlayerStats(nk, playerXId, statsX);
   writePlayerStats(nk, playerOId, statsO);
 
-  // Compute metadata for leaderboard display
   const winRateX = statsX.gamesPlayed > 0
     ? Math.round((statsX.wins / statsX.gamesPlayed) * 1000) / 10
     : 0;
@@ -359,10 +332,6 @@ function submitMatchResult(
     scoreO,
   );
 }
-
-// ---------------------------------------------------------------------------
-// RPC Functions
-// ---------------------------------------------------------------------------
 
 function createPrivateMatch(
   ctx: nkruntime.Context,
@@ -424,10 +393,6 @@ function getPlayerStats(
     winRate,
   });
 }
-
-// ---------------------------------------------------------------------------
-// Match Handler — Lifecycle Functions
-// ---------------------------------------------------------------------------
 
 const matchInit: nkruntime.MatchInitFunction = function (
   ctx: nkruntime.Context,
@@ -517,16 +482,13 @@ const matchJoin: nkruntime.MatchJoinFunction = function (
   const gs = state as GameState;
 
   for (const presence of presences) {
-    // --- Handle reconnecting player ---
     if (gs.disconnected !== null && gs.disconnected.userId === presence.userId) {
       const reconSymbol = gs.disconnected.symbol;
       logger.info("player %s (%s) reconnected as %s", presence.userId, presence.username, reconSymbol);
 
-      // Restore presence
       gs.presenceMap[presence.userId] = presence;
       gs.usernames[presence.userId] = presence.username;
 
-      // Clear disconnected state
       gs.disconnected = null;
 
       // Restore tick rate to the original value (undo grace period override)
@@ -545,10 +507,8 @@ const matchJoin: nkruntime.MatchJoinFunction = function (
         [presence],
       );
 
-      // Send current board state so client is in sync
       broadcastState(dispatcher, gs);
 
-      // Notify the other player that their opponent has reconnected
       const opponentId = reconSymbol === "X" ? gs.players.O : gs.players.X;
       if (opponentId && gs.presenceMap[opponentId]) {
         dispatcher.broadcastMessage(
@@ -561,10 +521,8 @@ const matchJoin: nkruntime.MatchJoinFunction = function (
       continue;
     }
 
-    // Track this presence
     gs.presenceMap[presence.userId] = presence;
 
-    // Assign to first open slot
     if (gs.players.X === null) {
       gs.players.X = presence.userId;
     } else if (gs.players.O === null) {
@@ -575,31 +533,26 @@ const matchJoin: nkruntime.MatchJoinFunction = function (
       continue;
     }
 
-    // Store username for this user
     gs.usernames[presence.userId] = presence.username;
     const assignedSymbol = gs.players.X === presence.userId ? "X" : "O";
     logger.info("player %s (%s) assigned as %s", presence.userId, presence.username, assignedSymbol);
 
-    // Check if both players are now assigned → start game
     if (gs.players.X !== null && gs.players.O !== null) {
       gs.status = "playing";
       gs.startedAt = Date.now();
 
-      // Initialize timer tracking if timed mode
       if (gs.timers) {
         gs.timers.lastMoveAt = tick;
       }
 
-      // Update match label
       dispatcher.matchLabelUpdate(JSON.stringify({ mode: gs.mode, status: "playing" }));
 
-      // Build player info for GAME_START message
       const playersInfo = {
         X: { userId: gs.players.X, username: gs.usernames[gs.players.X] || "Player X" },
         O: { userId: gs.players.O, username: gs.usernames[gs.players.O] || "Player O" },
       };
 
-      // Send personalized GAME_START to each player using stored presences
+      // Send personalized GAME_START to each player
       const xPresence = gs.presenceMap[gs.players.X];
       const oPresence = gs.presenceMap[gs.players.O];
 
@@ -619,7 +572,6 @@ const matchJoin: nkruntime.MatchJoinFunction = function (
         );
       }
 
-      // Broadcast initial state to both players
       broadcastState(dispatcher, gs);
 
       logger.info("game started: %s (X) vs %s (O)", gs.players.X, gs.players.O);
@@ -640,7 +592,6 @@ const matchLoop: nkruntime.MatchLoopFunction = function (
 ): { state: nkruntime.MatchState } | null {
   const gs = state as GameState;
 
-  // --- Reconnection grace period check ---
   if (gs.disconnected !== null && gs.status === "playing") {
     // Compute the tick rate that is actually active for this match.
     // During grace period for classic mode, we bump to GRACE_TICK_RATE.
@@ -667,7 +618,6 @@ const matchLoop: nkruntime.MatchLoopFunction = function (
     }
   }
 
-  // --- Timer countdown (timed mode only) ---
   if (gs.mode === "timed" && gs.status === "playing" && gs.timers) {
     const elapsed = (tick - gs.timers.lastMoveAt) / 10; // ticks → seconds
     gs.timers[gs.currentPlayer] -= elapsed;
@@ -687,7 +637,6 @@ const matchLoop: nkruntime.MatchLoopFunction = function (
     }
   }
 
-  // --- Process incoming messages ---
   for (const message of messages) {
     if (message.opCode !== OP_MOVE) {
       logger.warn("unknown op code %d from %s", message.opCode, message.sender.userId);
@@ -697,7 +646,6 @@ const matchLoop: nkruntime.MatchLoopFunction = function (
     const senderId = message.sender.userId;
     const senderPresence = message.sender;
 
-    // Parse move data
     let moveData: { row: number; col: number };
     try {
       moveData = JSON.parse(nk.binaryToString(message.data));
@@ -711,8 +659,6 @@ const matchLoop: nkruntime.MatchLoopFunction = function (
     }
 
     const { row, col } = moveData;
-
-    // --- Move Validation (6 rules) ---
 
     // Rule 1: Game must be in "playing" status
     if (gs.status !== "playing") {
@@ -775,16 +721,13 @@ const matchLoop: nkruntime.MatchLoopFunction = function (
       continue;
     }
 
-    // --- Apply the move ---
     gs.board[row][col] = gs.currentPlayer;
     gs.moveCount++;
 
-    // Update timer tracking for timed mode
     if (gs.timers) {
       gs.timers.lastMoveAt = tick;
     }
 
-    // --- Check for win/draw ---
     const winner = checkWinner(gs.board);
     if (winner !== "") {
       gs.winner = winner;
@@ -803,7 +746,6 @@ const matchLoop: nkruntime.MatchLoopFunction = function (
       submitMatchResult(nk, logger, gs);
       logger.info("game over: draw");
     } else {
-      // Switch turns
       gs.currentPlayer = gs.currentPlayer === "X" ? "O" : "X";
       broadcastState(dispatcher, gs);
     }
@@ -824,7 +766,6 @@ const matchLeave: nkruntime.MatchLeaveFunction = function (
   const gs = state as GameState;
 
   for (const presence of presences) {
-    // Clean up presence tracking
     delete gs.presenceMap[presence.userId];
 
     const leavingSymbol = symbolForUserId(gs, presence.userId);
@@ -872,7 +813,6 @@ const matchLeave: nkruntime.MatchLeaveFunction = function (
     // If status === "finished", nothing to do — match will clean up
   }
 
-  // If no connected presences remain, destroy the match
   if (Object.keys(gs.presenceMap).length === 0) {
     logger.info("all players left, destroying match");
     return null;
@@ -898,10 +838,6 @@ const matchTerminate: nkruntime.MatchTerminateFunction = function (
   return null;
 };
 
-// ---------------------------------------------------------------------------
-// Module Initialization
-// ---------------------------------------------------------------------------
-
 function initModule(
   ctx: nkruntime.Context,
   logger: nkruntime.Logger,
@@ -924,12 +860,10 @@ function initModule(
     logger.debug("leaderboard '%s' already exists", LEADERBOARD_ID);
   }
 
-  // Register RPC functions
   initializer.registerRpc("create_private_match", createPrivateMatch);
   initializer.registerRpc("submit_score", submitScore);
   initializer.registerRpc("get_player_stats", getPlayerStats);
 
-  // Register authoritative match handler
   initializer.registerMatch("tic-tac-toe", {
     matchInit,
     matchJoinAttempt,

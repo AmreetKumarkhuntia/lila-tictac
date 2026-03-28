@@ -4,13 +4,12 @@ import type {
   PlayerSymbol,
   GameStatus,
   GameMode,
+  MatchmakingStatus,
   PlayerTimers,
   PlayerInfo,
   StateUpdateMessage,
 } from "@/types/game";
 import { EMPTY_BOARD } from "@/lib/constants";
-
-export type MatchmakingStatus = "idle" | "searching" | "matched";
 
 interface GameStoreState {
   matchId: string | null;

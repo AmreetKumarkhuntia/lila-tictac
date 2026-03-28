@@ -32,7 +32,6 @@ export async function getSocket(session: Session): Promise<Socket> {
     return sharedSocket;
   }
 
-  // If a connection is already in progress, wait for it
   if (connectingPromise) {
     return connectingPromise;
   }
@@ -73,9 +72,6 @@ export function disconnectSocket() {
   connectingPromise = null;
 }
 
-/**
- * Check whether a shared socket exists and is connected.
- */
 export function isSocketConnected(): boolean {
   return socketConnected && sharedSocket !== null;
 }

@@ -33,7 +33,6 @@ export default function Cell({
     }
   }
 
-  // Symbol styling
   const symbolClass =
     value === "X"
       ? "text-indigo-500 dark:text-indigo-400"
@@ -41,14 +40,12 @@ export default function Cell({
         ? "text-rose-500 dark:text-rose-400"
         : "";
 
-  // Background styling
   const bgClass = isWinning
     ? value === "X"
       ? "bg-indigo-100 dark:bg-indigo-900/40"
       : "bg-rose-100 dark:bg-rose-900/40"
     : "bg-gray-100 dark:bg-gray-700";
 
-  // Cursor styling
   const cursorClass = isClickable
     ? "cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 active:bg-gray-300 dark:active:bg-gray-500"
     : "cursor-default";

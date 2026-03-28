@@ -15,7 +15,6 @@ export default function GamePage() {
   const { joinMatch, sendMove, leaveMatch } = useMatch();
   const joinAttempted = useRef(false);
 
-  // Game state selectors
   const storeMatchId = useGameStore((s) => s.matchId);
   const board = useGameStore((s) => s.board);
   const currentPlayer = useGameStore((s) => s.currentPlayer);
@@ -55,10 +54,8 @@ export default function GamePage() {
     }
   }, [error, storeMatchId, navigate]);
 
-  // Determine opponent symbol
   const opponentSymbol = mySymbol === "X" ? "O" : "X";
 
-  // Timer data for player cards (timed mode only)
   const isTimed = mode === "timed" && timers !== null;
   const myTimer = isTimed && mySymbol
     ? { timeRemaining: timers[mySymbol], timeLimit: timers.timeLimit }
@@ -103,7 +100,6 @@ export default function GamePage() {
     navigate("/home", { replace: true });
   }, [leaveMatch, navigate]);
 
-  // Status text
   let statusText: string;
   if (opponentDisconnected) {
     statusText = "Opponent disconnected — waiting for reconnect...";
@@ -117,7 +113,6 @@ export default function GamePage() {
     statusText = "Opponent's Turn";
   }
 
-  // Loading state — joining match
   if (isLoading && !storeMatchId) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-100 dark:bg-gray-950">
@@ -134,7 +129,6 @@ export default function GamePage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 px-4 py-6 text-gray-900 dark:bg-gray-950 dark:text-white">
       <div className="w-full max-w-sm space-y-4">
-        {/* Opponent card (top) */}
         <PlayerCard
           player={players[opponentSymbol]}
           symbol={opponentSymbol}
@@ -162,7 +156,6 @@ export default function GamePage() {
           </p>
         </div>
 
-        {/* Board */}
         <Board
           board={board}
           onCellClick={handleCellClick}
@@ -170,7 +163,6 @@ export default function GamePage() {
           disabled={!isMyTurn || isGameOver || isWaiting || opponentDisconnected || movePending}
         />
 
-        {/* Current user card (bottom) */}
         {mySymbol && (
           <PlayerCard
             player={players[mySymbol]}
@@ -181,7 +173,6 @@ export default function GamePage() {
           />
         )}
 
-        {/* Leave match button */}
         {!isGameOver && (
           <button
             onClick={handleLeave}
@@ -192,7 +183,6 @@ export default function GamePage() {
         )}
       </div>
 
-      {/* Game result overlay */}
       {isGameOver && winner !== "" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" role="presentation">
           <GameResult

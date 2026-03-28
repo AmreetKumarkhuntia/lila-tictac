@@ -36,14 +36,12 @@ export default function PlayerCard({
     <div
       className={`flex items-center gap-3 rounded-xl bg-gray-100 px-4 py-3 transition-shadow dark:bg-gray-800 ${activeRing}`}
     >
-      {/* Symbol badge */}
       <div
         className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lg font-bold ${symbolColor}`}
       >
         {symbol}
       </div>
 
-      {/* Player info */}
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">
           {player?.username ?? "Waiting..."}
@@ -58,7 +56,6 @@ export default function PlayerCard({
         </p>
       </div>
 
-      {/* Timer (timed mode only) */}
       {timer && (
         <TimerDisplay
           timeRemaining={timer.timeRemaining}

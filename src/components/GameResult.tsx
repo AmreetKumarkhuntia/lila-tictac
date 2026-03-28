@@ -16,12 +16,10 @@ export default function GameResult({
   const navigate = useNavigate();
   const dialogRef = useRef<HTMLDivElement>(null);
 
-  // Focus trap and auto-focus
   useEffect(() => {
     const el = dialogRef.current;
     if (!el) return;
 
-    // Auto-focus the first button
     const firstBtn = el.querySelector<HTMLElement>("button");
     firstBtn?.focus();
 
@@ -52,7 +50,6 @@ export default function GameResult({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Determine heading text
   let heading: string;
   let subtext: string;
   let headingColor: string;

@@ -107,7 +107,6 @@ export function useMatch() {
       try {
         const socket = await getSocket(session);
 
-        // Wire up match-specific event handlers
         socket.onmatchdata = handleMatchData;
 
         socket.ondisconnect = () => {
@@ -169,7 +168,6 @@ export function useMatch() {
     useGameStore.getState().resetGame();
   }, [session]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       const matchId = matchIdRef.current;

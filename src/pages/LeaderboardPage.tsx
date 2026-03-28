@@ -17,7 +17,6 @@ export default function LeaderboardPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4 py-6 text-gray-900 dark:bg-gray-950 dark:text-white">
       <div className="w-full max-w-md">
-        {/* Header */}
         <div className="mb-4 flex items-center justify-between">
           <button
             onClick={() => navigate("/home")}
@@ -59,7 +58,6 @@ export default function LeaderboardPage() {
           </button>
         </div>
 
-        {/* Tabs */}
         <div className="mb-4 flex rounded-lg border border-gray-200 bg-gray-50 p-1 dark:border-gray-700 dark:bg-gray-800">
           <button
             onClick={() => setActiveTab("rankings")}
@@ -83,7 +81,6 @@ export default function LeaderboardPage() {
           </button>
         </div>
 
-        {/* Content */}
         <div className="rounded-2xl bg-white p-4 shadow-xl dark:bg-gray-900">
           {isLoading ? (
             <div className="flex justify-center py-12">
@@ -123,10 +120,6 @@ export default function LeaderboardPage() {
   );
 }
 
-// ---------------------------------------------------------------------------
-// My Stats Panel
-// ---------------------------------------------------------------------------
-
 import type { PlayerStats } from "@/types/game";
 
 function StatsPanel({
@@ -148,7 +141,6 @@ function StatsPanel({
 
   return (
     <div className="space-y-4">
-      {/* Rank + Win Rate hero */}
       <div className="flex items-center justify-center gap-6 py-2">
         {rank !== null && (
           <div className="text-center">
@@ -168,14 +160,12 @@ function StatsPanel({
         </div>
       </div>
 
-      {/* Win / Loss / Draw row */}
       <div className="grid grid-cols-3 gap-2">
         <StatCard label="Wins" value={stats.wins} color="text-emerald-600 dark:text-emerald-400" />
         <StatCard label="Losses" value={stats.losses} color="text-rose-600 dark:text-rose-400" />
         <StatCard label="Draws" value={stats.draws} color="text-gray-600 dark:text-gray-300" />
       </div>
 
-      {/* Detail row */}
       <div className="grid grid-cols-3 gap-2">
         <StatCard label="Games" value={stats.gamesPlayed} color="text-gray-900 dark:text-white" />
         <StatCard

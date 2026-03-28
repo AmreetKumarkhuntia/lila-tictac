@@ -16,16 +16,10 @@ export function persistMatchId(matchId: string | null) {
   }
 }
 
-/**
- * Gets the persisted matchId from sessionStorage (if any).
- */
 export function getPersistedMatchId(): string | null {
   return sessionStorage.getItem(MATCH_ID_STORAGE_KEY);
 }
 
-/**
- * Clears the persisted matchId from sessionStorage.
- */
 export function clearPersistedMatchId() {
   sessionStorage.removeItem(MATCH_ID_STORAGE_KEY);
 }

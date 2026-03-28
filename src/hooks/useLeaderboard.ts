@@ -56,31 +56,25 @@ export function useLeaderboard(): UseLeaderboardReturn {
     setError(null);
 
     try {
-      // Fetch all three in parallel
       const [globalResult, aroundOwnerResult, statsResult] = await Promise.all([
-        // Global top records
         nakamaClient.listLeaderboardRecords(
           session,
           LEADERBOARD_ID,
           undefined,
           DEFAULT_LIMIT,
         ),
-        // Current player's rank context
         nakamaClient.listLeaderboardRecordsAroundOwner(
           session,
           LEADERBOARD_ID,
           session.user_id!,
           1,
         ),
-        // Personal stats via RPC
         nakamaClient.rpc(session, "get_player_stats", {}),
       ]);
 
-      // Map global records
       const mappedRecords = (globalResult.records ?? []).map(mapRecord);
       setRecords(mappedRecords);
 
-      // Extract current player's rank from around-owner result
       const ownerRecords = aroundOwnerResult.owner_records ?? [];
       const myOwnerRecord = ownerRecords[0];
       if (myOwnerRecord) {
@@ -89,7 +83,6 @@ export function useLeaderboard(): UseLeaderboardReturn {
         setMyRank(null);
       }
 
-      // Parse player stats from RPC response
       if (statsResult.payload) {
         setMyStats(statsResult.payload as PlayerStats);
       }
@@ -103,7 +96,6 @@ export function useLeaderboard(): UseLeaderboardReturn {
     }
   }, [session]);
 
-  // Fetch on mount
   useEffect(() => {
     fetchLeaderboard();
   }, [fetchLeaderboard]);
