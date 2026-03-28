@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useNakama } from "@/hooks/useNakama";
 import { useMatchmaker } from "@/hooks/useMatchmaker";
+import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { useAuthStore } from "@/store/authStore";
 import { useGameStore } from "@/store/gameStore";
 import { useUiStore } from "@/store/uiStore";
@@ -12,6 +13,7 @@ export default function HomePage() {
   const navigate = useNavigate();
   const { logout } = useNakama();
   const { findMatch, cancelMatchmaking } = useMatchmaker();
+  const { myStats, records, isLoading: leaderboardLoading } = useLeaderboard();
   const username = useAuthStore((s) => s.username);
   const { theme, toggleTheme } = useUiStore();
   const matchmakingStatus = useGameStore((s) => s.matchmakingStatus);
@@ -68,12 +70,37 @@ export default function HomePage() {
         <h1 className="mb-1 text-center text-3xl font-bold tracking-tight">
           Tic-Tac-Toe
         </h1>
-        <p className="mb-8 text-center text-sm text-gray-500 dark:text-gray-400">
+        <p className="mb-2 text-center text-sm text-gray-500 dark:text-gray-400">
           Welcome,{" "}
           <span className="font-semibold text-gray-900 dark:text-white">
             {username}
           </span>
         </p>
+
+        {/* Stats summary bar */}
+        {myStats && (
+          <div className="mb-8 flex items-center justify-center gap-3 text-sm">
+            <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+              W: {myStats.wins}
+            </span>
+            <span className="text-gray-300 dark:text-gray-600">|</span>
+            <span className="font-semibold text-rose-500 dark:text-rose-400">
+              L: {myStats.losses}
+            </span>
+            <span className="text-gray-300 dark:text-gray-600">|</span>
+            <span className="font-semibold text-gray-500 dark:text-gray-400">
+              D: {myStats.draws}
+            </span>
+          </div>
+        )}
+        {!myStats && !leaderboardLoading && (
+          <div className="mb-8" />
+        )}
+        {!myStats && leaderboardLoading && (
+          <div className="mb-8 flex justify-center">
+            <div className="h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-gray-500 dark:border-gray-600 dark:border-t-gray-400" />
+          </div>
+        )}
 
         <div className="space-y-3">
           <div className="flex rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
@@ -141,6 +168,35 @@ export default function HomePage() {
             Leaderboard
           </button>
         </div>
+
+        {/* Top-3 leaderboard preview */}
+        {records.length > 0 && (
+          <div className="mt-4 rounded-lg bg-gray-50 px-4 py-3 dark:bg-gray-800/60">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+              Top Players
+            </p>
+            <div className="space-y-1.5">
+              {records.slice(0, 3).map((r) => (
+                <div
+                  key={r.ownerId}
+                  className="flex items-center justify-between text-sm"
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="w-5 text-right text-xs font-bold text-indigo-500 dark:text-indigo-400">
+                      {r.rank}.
+                    </span>
+                    <span className="font-medium text-gray-800 dark:text-gray-200">
+                      {r.username}
+                    </span>
+                  </span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {r.metadata.wins} win{r.metadata.wins !== 1 ? "s" : ""}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="mt-8 border-t border-gray-200 pt-4 dark:border-gray-800">
           <button

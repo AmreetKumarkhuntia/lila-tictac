@@ -30,3 +30,5 @@ export const EMPTY_BOARD: CellValue[][] = [
 
 export const LEADERBOARD_ID = "tic-tac-toe-wins";
 export const DEFAULT_TIME_LIMIT = 30;
+export const SCORE_WIN = 3;
+export const SCORE_DRAW = 1;

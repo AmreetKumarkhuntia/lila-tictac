@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
 set -e
 
-# ── Step 1: Stop containers and remove volumes ──────────────────────────────
-echo ">> Stopping containers and removing volumes..."
-docker-compose down -v
+# ── Step 1: Stop containers (pass --wipe to also remove volumes/data) ────────
+if [ "$1" = "--wipe" ]; then
+  echo ">> Stopping containers and removing volumes (fresh DB)..."
+  docker-compose down -v
+else
+  echo ">> Stopping containers (keeping data)..."
+  docker-compose down
+fi
 
 # ── Step 2: Build Nakama modules ─────────────────────────────────────────────
 echo ">> Building Nakama modules..."

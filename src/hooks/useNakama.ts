@@ -62,6 +62,15 @@ export function useNakama() {
         }
       }
 
+      // Validate the user still exists server-side (e.g. DB may have been
+      // wiped while the JWT token is still unexpired).
+      try {
+        await nakamaClient.getAccount(restoredSession);
+      } catch {
+        clearPersistedSession();
+        return false;
+      }
+
       const username =
         restoredSession.username ??
         localStorage.getItem("nakamaUsername") ??
