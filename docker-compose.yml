@@ -1,0 +1,48 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: nakama
+      POSTGRES_USER: nakama
+      POSTGRES_PASSWORD: nakama
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nakama -d nakama"]
+      interval: 3s
+      retries: 5
+
+  nakama:
+    build:
+      context: .
+      dockerfile: nakama/Dockerfile
+    ports:
+      - "7349:7349"
+      - "7350:7350"
+      - "7351:7351"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NAKAMA_DB_HOST: postgres
+      NAKAMA_DB_PORT: 5432
+      NAKAMA_DB_NAME: nakama
+      NAKAMA_DB_USER: nakama
+      NAKAMA_DB_PASSWORD: nakama
+    command:
+      - "/nakama/nakama"
+      - "--database.address"
+      - "nakama:nakama@postgres:5432/nakama"
+      - "--logger.level"
+      - "debug"
+      - "--session.token_expiry_sec"
+      - "7200"
+      - "--socket.max_message_size_bytes"
+      - "4096"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7350/"]
+      interval: 5s
+      retries: 5
+
+volumes:
+  postgres-data:
