@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import type { Theme, ToastType, Toast } from "@/types/ui";
+import type { Theme, Toast } from "@/types/ui";
+import type { UiState } from "@/types/stores";
 
 function getInitialTheme(): Theme {
   const stored = localStorage.getItem("theme");
@@ -19,20 +20,6 @@ function applyThemeClass(theme: Theme) {
 applyThemeClass(getInitialTheme());
 
 let toastCounter = 0;
-
-interface UiState {
-  isLoading: boolean;
-  error: string | null;
-  theme: Theme;
-  toasts: Toast[];
-  setLoading: (loading: boolean) => void;
-  setError: (error: string | null) => void;
-  clearError: () => void;
-  toggleTheme: () => void;
-  setTheme: (theme: Theme) => void;
-  addToast: (message: string, type: ToastType) => void;
-  removeToast: (id: string) => void;
-}
 
 export const useUiStore = create<UiState>((set, get) => ({
   isLoading: false,

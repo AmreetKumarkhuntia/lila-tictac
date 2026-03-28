@@ -1,61 +1,10 @@
 import { create } from "zustand";
-import type {
-  CellValue,
-  PlayerSymbol,
-  GameStatus,
-  GameMode,
-  MatchmakingStatus,
-  PlayerTimers,
-  PlayerInfo,
-  StateUpdateMessage,
-} from "@/types/game";
+import type { GameStoreState, GameStoreActions } from "@/types/stores";
 import { EMPTY_BOARD } from "@/lib/constants";
-
-interface GameStoreState {
-  matchId: string | null;
-  board: CellValue[][];
-  currentPlayer: PlayerSymbol;
-  mySymbol: PlayerSymbol | null;
-  players: Record<PlayerSymbol, PlayerInfo | null>;
-  winner: "" | PlayerSymbol | "draw";
-  moveCount: number;
-  mode: GameMode;
-  status: GameStatus;
-  timers: PlayerTimers | null;
-  winningLine: [number, number][] | null;
-  gameOverReason: string | null;
-  matchmakingStatus: MatchmakingStatus;
-  matchmakingTicket: string | null;
-  opponentDisconnected: boolean;
-  movePending: boolean;
-}
-
-interface GameStoreActions {
-  setMatchId: (matchId: string) => void;
-  setBoard: (board: CellValue[][]) => void;
-  setMySymbol: (symbol: PlayerSymbol) => void;
-  setStatus: (status: GameStatus) => void;
-  applyStateUpdate: (data: StateUpdateMessage) => void;
-  setGameStart: (
-    players: Record<PlayerSymbol, PlayerInfo>,
-    mode: GameMode,
-    mySymbol: PlayerSymbol,
-  ) => void;
-  setGameOver: (
-    winner: "" | PlayerSymbol | "draw",
-    winningLine: [number, number][] | null,
-    reason: string | null,
-  ) => void;
-  setMatchmakingStatus: (status: MatchmakingStatus) => void;
-  setMatchmakingTicket: (ticket: string | null) => void;
-  setOpponentDisconnected: (disconnected: boolean) => void;
-  setMovePending: (pending: boolean) => void;
-  resetGame: () => void;
-}
 
 const initialState: GameStoreState = {
   matchId: null,
-  board: EMPTY_BOARD.map((row) => [...row]) as CellValue[][],
+  board: EMPTY_BOARD.map((row) => [...row]),
   currentPlayer: "X",
   mySymbol: null,
   players: { X: null, O: null },

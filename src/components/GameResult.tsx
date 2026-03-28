@@ -1,12 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import type { PlayerSymbol } from "@/types/game";
-
-interface GameResultProps {
-  winner: "" | PlayerSymbol | "draw";
-  mySymbol: PlayerSymbol | null;
-  reason?: string;
-}
+import type { GameResultProps } from "@/types/components";
 
 export default function GameResult({
   winner,

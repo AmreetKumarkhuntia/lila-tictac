@@ -1,17 +1,5 @@
-import type { PlayerInfo, PlayerSymbol } from "@/types/game";
+import type { PlayerCardProps } from "@/types/components";
 import TimerDisplay from "@/components/TimerDisplay";
-
-interface PlayerCardProps {
-  player: PlayerInfo | null;
-  symbol: PlayerSymbol;
-  isActive: boolean;
-  isCurrentUser: boolean;
-  /** Timer data — only provided when mode is "timed" */
-  timer?: {
-    timeRemaining: number;
-    timeLimit: number;
-  };
-}
 
 export default function PlayerCard({
   player,

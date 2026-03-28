@@ -13,7 +13,7 @@ import type {
   ErrorMessage,
   OpponentLeftMessage,
   OpponentReconnectedMessage,
-} from "@/types/game";
+} from "@/types/protocol";
 
 function decodeMatchData(data: Uint8Array): string {
   return new TextDecoder().decode(data);

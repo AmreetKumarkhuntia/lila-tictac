@@ -1,3 +1,5 @@
+import type { CellValue } from "@/types/game";
+
 export const OP_CODE = {
   MOVE: 1,
   STATE_UPDATE: 10,
@@ -20,7 +22,7 @@ export const WIN_LINES: [number, number][][] = [
   [[0, 2], [1, 1], [2, 0]],
 ];
 
-export const EMPTY_BOARD: string[][] = [
+export const EMPTY_BOARD: CellValue[][] = [
   ["", "", ""],
   ["", "", ""],
   ["", "", ""],

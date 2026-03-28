@@ -1,13 +1,4 @@
-import type { CellValue } from "@/types/game";
-
-interface CellProps {
-  value: CellValue;
-  row: number;
-  col: number;
-  onClick: (row: number, col: number) => void;
-  disabled: boolean;
-  isWinning: boolean;
-}
+import type { CellProps } from "@/types/components";
 
 export default function Cell({
   value,
