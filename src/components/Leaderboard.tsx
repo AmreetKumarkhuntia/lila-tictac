@@ -1,9 +1,4 @@
-import type { LeaderboardRecord } from "@/types/game";
-
-interface LeaderboardProps {
-  records: LeaderboardRecord[];
-  currentUserId: string | null;
-}
+import type { LeaderboardProps } from "@/types/components";
 
 function getRankBadge(rank: number): string | null {
   switch (rank) {

@@ -4,6 +4,7 @@ import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { useAuthStore } from "@/store/authStore";
 import Leaderboard from "@/components/Leaderboard";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import type { PlayerStats } from "@/types/leaderboard";
 
 type Tab = "rankings" | "stats";
 
@@ -119,8 +120,6 @@ export default function LeaderboardPage() {
     </div>
   );
 }
-
-import type { PlayerStats } from "@/types/game";
 
 function StatsPanel({
   stats,

@@ -2,16 +2,8 @@ import { useState, useCallback, useEffect } from "react";
 import { nakamaClient } from "@/lib/nakama";
 import { useAuthStore } from "@/store/authStore";
 import { LEADERBOARD_ID } from "@/lib/constants";
-import type { LeaderboardRecord, PlayerStats } from "@/types/game";
-
-interface UseLeaderboardReturn {
-  records: LeaderboardRecord[];
-  myStats: PlayerStats | null;
-  myRank: number | null;
-  isLoading: boolean;
-  error: string | null;
-  refresh: () => void;
-}
+import type { LeaderboardRecord, PlayerStats } from "@/types/leaderboard";
+import type { UseLeaderboardReturn } from "@/types/hooks";
 
 const DEFAULT_LIMIT = 50;
 

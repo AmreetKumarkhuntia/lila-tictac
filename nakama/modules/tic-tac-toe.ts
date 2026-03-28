@@ -1,89 +1,6 @@
-const OP_MOVE = 1;
-
-const OP_STATE_UPDATE = 10;
-const OP_GAME_START = 11;
-const OP_GAME_OVER = 12;
-const OP_ERROR = 13;
-const OP_OPPONENT_LEFT = 14;
-const OP_MATCH_TERMINATED = 15;
-const OP_OPPONENT_RECONNECTED = 16;
-
-const LEADERBOARD_ID = "tic-tac-toe-wins";
-const STATS_COLLECTION = "player_stats";
-const STATS_KEY = "summary";
-
-const SCORE_WIN = 3;
-const SCORE_DRAW = 1;
-
-// Reconnection grace period (in seconds)
-const RECONNECT_GRACE_SECONDS = 15;
-const GRACE_TICK_RATE = 5;
-
-const WIN_LINES: number[][] = [
-  // Rows
-  0, 0, 0, 1, 0, 2,
-  1, 0, 1, 1, 1, 2,
-  2, 0, 2, 1, 2, 2,
-  // Columns
-  0, 0, 1, 0, 2, 0,
-  0, 1, 1, 1, 2, 1,
-  0, 2, 1, 2, 2, 2,
-  // Diagonals
-  0, 0, 1, 1, 2, 2,
-  0, 2, 1, 1, 2, 0,
-].reduce<number[][]>((acc, _, i, arr) => {
-  // Group flat pairs into [[r,c],[r,c],[r,c]] triples
-  if (i % 6 === 0) {
-    acc.push([
-      arr[i] as number, arr[i + 1] as number,
-      arr[i + 2] as number, arr[i + 3] as number,
-      arr[i + 4] as number, arr[i + 5] as number,
-    ]);
-  }
-  return acc;
-}, []);
-
-type PlayerSymbol = "X" | "O";
-type CellValue = "" | "X" | "O";
-type GameMode = "classic" | "timed";
-type GameStatus = "waiting" | "playing" | "finished";
-
-interface PlayerTimers {
-  X: number;
-  O: number;
-  lastMoveAt: number;
-  timeLimit: number;
-}
-
-interface DisconnectedPlayer {
-  userId: string;
-  symbol: PlayerSymbol;
-  /** Tick at which the player disconnected — used to compute grace elapsed */
-  disconnectedAtTick: number;
-}
-
-interface GameState {
-  board: CellValue[][];
-  currentPlayer: PlayerSymbol;
-  /** Maps symbol → presence userId (null if slot open) */
-  players: { X: string | null; O: string | null };
-  /** Maps userId → username for display */
-  usernames: { [userId: string]: string };
-  /** Tracks active presences by userId for targeted messaging */
-  presenceMap: { [userId: string]: nkruntime.Presence };
-  winner: "" | PlayerSymbol | "draw";
-  moveCount: number;
-  mode: GameMode;
-  status: GameStatus;
-  createdAt: number;
-  startedAt: number | null;
-  finishedAt: number | null;
-  timers: PlayerTimers | null;
-  /** Set when a player disconnects mid-game; cleared on reconnect or grace expiry */
-  disconnected: DisconnectedPlayer | null;
-  /** Original tick rate before grace period override (used to restore after reconnect) */
-  originalTickRate: number;
-}
+// Types are defined in types.ts, constants in constants.ts.
+// The Nakama TypeScript runtime automatically includes all .ts
+// files in the modules/ directory — no explicit imports needed.
 
 function createEmptyBoard(): CellValue[][] {
   return [
@@ -156,16 +73,6 @@ function broadcastGameOver(
     reason,
   });
   dispatcher.broadcastMessage(OP_GAME_OVER, data);
-}
-
-interface PlayerStatsData {
-  wins: number;
-  losses: number;
-  draws: number;
-  gamesPlayed: number;
-  currentStreak: number;
-  bestStreak: number;
-  lastMatchAt: number;
 }
 
 function defaultStats(): PlayerStatsData {

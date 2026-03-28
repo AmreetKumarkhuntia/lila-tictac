@@ -1,10 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-
-interface TimerDisplayProps {
-  timeRemaining: number;
-  timeLimit: number;
-  isActive: boolean;
-}
+import type { TimerDisplayProps } from "@/types/components";
 
 function formatTime(seconds: number): string {
   const clamped = Math.max(0, seconds);

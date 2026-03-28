@@ -1,17 +1,11 @@
-import type { CellValue } from "@/types/game";
+import type { WinningLine } from "@/types/game";
+import type { BoardProps } from "@/types/components";
 import Cell from "./Cell";
-
-interface BoardProps {
-  board: CellValue[][];
-  onCellClick: (row: number, col: number) => void;
-  winningLine: [number, number][] | null;
-  disabled: boolean;
-}
 
 function isCellWinning(
   row: number,
   col: number,
-  winningLine: [number, number][] | null,
+  winningLine: WinningLine,
 ): boolean {
   if (!winningLine) return false;
   return winningLine.some(([r, c]) => r === row && c === col);

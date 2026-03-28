@@ -2,11 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useMatchmaker } from "@/hooks/useMatchmaker";
 import { useUiStore } from "@/store/uiStore";
 import type { GameMode } from "@/types/game";
-
-interface PrivateMatchModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
+import type { PrivateMatchModalProps } from "@/types/components";
 
 type Tab = "create" | "join";
 

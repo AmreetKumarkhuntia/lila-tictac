@@ -1,5 +1,5 @@
 import { useEffect, useState, Component } from "react";
-import type { ReactNode, ErrorInfo } from "react";
+import type { ErrorInfo } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
 import { useNakama } from "@/hooks/useNakama";
@@ -10,20 +10,12 @@ import GamePage from "@/pages/GamePage";
 import LeaderboardPage from "@/pages/LeaderboardPage";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import ToastContainer from "@/components/ToastContainer";
+import type { ErrorBoundaryProps, ErrorBoundaryState } from "@/types/components";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   if (!isAuthenticated) return <Navigate to="/auth" replace />;
   return <>{children}</>;
-}
-
-interface ErrorBoundaryProps {
-  children: ReactNode;
-}
-
-interface ErrorBoundaryState {
-  hasError: boolean;
-  error: Error | null;
 }
 
 class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
