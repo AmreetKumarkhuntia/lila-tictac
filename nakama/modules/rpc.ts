@@ -32,6 +32,24 @@ function submitScore(
   return JSON.stringify({ success: true, message: "Scores are auto-submitted by the server" });
 }
 
+function matchmakerMatched(
+  ctx: nkruntime.Context,
+  logger: nkruntime.Logger,
+  nk: nkruntime.Nakama,
+  matches: nkruntime.MatchmakerResult[],
+): string {
+  // Extract mode from the first matched user's string properties
+  const mode = (matches[0]?.properties?.mode as string) ?? "classic";
+  const matchId = nk.matchCreate("tic-tac-toe", { mode });
+  logger.info(
+    "matchmaker created match '%s' for mode '%s' (%d users)",
+    matchId,
+    mode,
+    matches.length,
+  );
+  return matchId;
+}
+
 function getPlayerStats(
   ctx: nkruntime.Context,
   logger: nkruntime.Logger,

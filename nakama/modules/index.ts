@@ -1,4 +1,4 @@
-function initModule(
+let InitModule: nkruntime.InitModule = function (
   ctx: nkruntime.Context,
   logger: nkruntime.Logger,
   nk: nkruntime.Nakama,
@@ -32,5 +32,10 @@ function initModule(
     matchSignal,
   });
 
+  initializer.registerMatchmakerMatched(matchmakerMatched);
+
   logger.info("tic-tac-toe module loaded");
-}
+};
+
+// Reference InitModule to avoid it getting removed on build
+!InitModule && InitModule.bind(null);

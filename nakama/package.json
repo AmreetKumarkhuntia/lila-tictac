@@ -1,0 +1,15 @@
+{
+  "name": "lila-tictac-nakama",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "build": "npx tsc",
+    "type-check": "npx tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.0"
+  },
+  "dependencies": {
+    "nakama-runtime": "https://github.com/heroiclabs/nakama-common"
+  }
+}

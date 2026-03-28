@@ -8,7 +8,19 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "eslint src",
-    "typecheck": "tsc -b --noEmit"
+    "typecheck": "tsc -b --noEmit",
+    "backend:up": "docker-compose up -d",
+    "backend:down": "docker-compose down",
+    "backend:reset": "docker-compose down -v",
+    "backend:restart": "docker-compose restart nakama",
+    "backend:logs": "docker-compose logs -f nakama",
+    "backend:ps": "docker-compose ps",
+    "nakama:install": "npm --prefix nakama install",
+    "nakama:build": "npm --prefix nakama run build",
+    "nakama:console": "open http://localhost:7351",
+    "dev:fresh": "./dev.sh",
+    "start": "npm run nakama:build && docker-compose up -d && vite",
+    "setup": "cp -n .env.example .env && npm install && npm run nakama:install"
   },
   "dependencies": {
     "@heroiclabs/nakama-js": "^2.8.0",

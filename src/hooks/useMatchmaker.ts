@@ -37,18 +37,28 @@ export function useMatchmaker() {
         return;
       }
 
+      console.log("[matchmaker] findMatch started", { mode, userId: session.user_id });
       useGameStore.getState().setMatchmakingStatus("searching");
       useUiStore.getState().clearError();
 
       try {
         const socket = await getSocket(session);
+        console.log("[matchmaker] socket connected");
 
         // Wire up the matched callback before adding the ticket
         socket.onmatchmakermatched = async (matched) => {
+          console.log("[matchmaker] onmatchmakermatched fired", {
+            match_id: matched.match_id,
+            token: matched.token,
+            users: matched.users?.length,
+            self: matched.self,
+          });
+
           useGameStore.getState().setMatchmakingStatus("matched");
           useGameStore.getState().setMatchmakingTicket(null);
 
           if (!matched.match_id) {
+            console.error("[matchmaker] no match_id in matched response", matched);
             useUiStore.getState().setError("Matchmaker returned no match ID");
             useGameStore.getState().setMatchmakingStatus("idle");
             return;
@@ -57,11 +67,13 @@ export function useMatchmaker() {
           try {
             // Join the match via the socket (handlers will be wired by useMatch
             // when the GamePage mounts — for now we just need the match ID)
+            console.log("[matchmaker] joining match", matched.match_id);
             const match = await socket.joinMatch(matched.match_id);
+            console.log("[matchmaker] joined match successfully", match.match_id);
             useGameStore.getState().setMatchId(match.match_id);
             navigate(`/game/${match.match_id}`);
           } catch (err) {
-            console.error("Failed to join matched game:", err);
+            console.error("[matchmaker] failed to join matched game:", err);
             useUiStore.getState().setError(
               err instanceof Error ? err.message : "Failed to join match",
             );
@@ -78,9 +90,10 @@ export function useMatchmaker() {
           { mode }, // stringProperties
         );
 
+        console.log("[matchmaker] ticket added", { ticket: ticket.ticket, mode });
         useGameStore.getState().setMatchmakingTicket(ticket.ticket);
       } catch (err) {
-        console.error("Failed to start matchmaking:", err);
+        console.error("[matchmaker] failed to start matchmaking:", err);
         useUiStore.getState().setError(
           err instanceof Error ? err.message : "Failed to start matchmaking",
         );
@@ -94,6 +107,7 @@ export function useMatchmaker() {
     if (!session) return;
 
     const { matchmakingTicket } = useGameStore.getState();
+    console.log("[matchmaker] cancelling", { ticket: matchmakingTicket });
 
     if (matchmakingTicket) {
       try {
@@ -102,7 +116,7 @@ export function useMatchmaker() {
         // Clear the matched callback to prevent stale matches from firing
         socket.onmatchmakermatched = () => {};
       } catch (err) {
-        console.warn("Error removing matchmaker ticket:", err);
+        console.warn("[matchmaker] error removing ticket:", err);
       }
     }
 

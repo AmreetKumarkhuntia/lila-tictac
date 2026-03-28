@@ -31,9 +31,11 @@ export function useMatch() {
     try {
       payload = decodeMatchData(matchData.data);
     } catch {
-      console.error("Failed to decode match data");
+      console.error("[match] failed to decode match data");
       return;
     }
+
+    console.log("[match] received opCode=%d payload=%s", opCode, payload.slice(0, 200));
 
     switch (opCode) {
       case OP_CODE.STATE_UPDATE: {
@@ -110,11 +112,13 @@ export function useMatch() {
         socket.onmatchdata = handleMatchData;
 
         socket.ondisconnect = () => {
-          console.warn("Socket disconnected");
+          console.warn("[match] socket disconnected");
           matchIdRef.current = null;
         };
 
+        console.log("[match] joining match", matchId);
         const match = await socket.joinMatch(matchId);
+        console.log("[match] joined successfully", match.match_id);
 
         matchIdRef.current = match.match_id;
         useGameStore.getState().setMatchId(match.match_id);
