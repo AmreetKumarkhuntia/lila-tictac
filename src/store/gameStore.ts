@@ -6,6 +6,7 @@ import type {
   GameMode,
   PlayerTimers,
   PlayerInfo,
+  StateUpdateMessage,
 } from "@/types/game";
 import { EMPTY_BOARD } from "@/lib/constants";
 
@@ -28,6 +29,7 @@ interface GameStoreActions {
   setBoard: (board: CellValue[][]) => void;
   setMySymbol: (symbol: PlayerSymbol) => void;
   setStatus: (status: GameStatus) => void;
+  applyStateUpdate: (data: StateUpdateMessage) => void;
   setGameStart: (
     players: Record<PlayerSymbol, PlayerInfo>,
     mode: GameMode,
@@ -60,6 +62,14 @@ export const useGameStore = create<GameStoreState & GameStoreActions>((set) => (
   setBoard: (board) => set({ board }),
   setMySymbol: (mySymbol) => set({ mySymbol }),
   setStatus: (status) => set({ status }),
+  applyStateUpdate: (data) =>
+    set({
+      board: data.board,
+      currentPlayer: data.currentPlayer,
+      moveCount: data.moveCount,
+      status: data.status,
+      timers: data.timers,
+    }),
   setGameStart: (players, mode, mySymbol) =>
     set({ players, mode, mySymbol, status: "playing" }),
   setGameOver: (winner, winningLine) =>
