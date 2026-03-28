@@ -16,6 +16,14 @@ const OP_ERROR = 13;
 const OP_OPPONENT_LEFT = 14;
 const OP_MATCH_TERMINATED = 15;
 
+const LEADERBOARD_ID = "tic-tac-toe-wins";
+const STATS_COLLECTION = "player_stats";
+const STATS_KEY = "summary";
+
+// Scoring constants
+const SCORE_WIN = 3;
+const SCORE_DRAW = 1;
+
 const WIN_LINES: number[][] = [
   // Rows
   0, 0, 0, 1, 0, 2,
@@ -152,6 +160,189 @@ function broadcastGameOver(
 }
 
 // ---------------------------------------------------------------------------
+// Player Stats Persistence
+// ---------------------------------------------------------------------------
+
+interface PlayerStatsData {
+  wins: number;
+  losses: number;
+  draws: number;
+  gamesPlayed: number;
+  currentStreak: number;
+  bestStreak: number;
+  lastMatchAt: number;
+}
+
+function defaultStats(): PlayerStatsData {
+  return {
+    wins: 0,
+    losses: 0,
+    draws: 0,
+    gamesPlayed: 0,
+    currentStreak: 0,
+    bestStreak: 0,
+    lastMatchAt: 0,
+  };
+}
+
+function readPlayerStats(
+  nk: nkruntime.Nakama,
+  userId: string,
+): PlayerStatsData {
+  const objects = nk.storageRead([
+    { collection: STATS_COLLECTION, key: STATS_KEY, userId },
+  ]);
+  if (objects.length > 0 && objects[0].value) {
+    return objects[0].value as PlayerStatsData;
+  }
+  return defaultStats();
+}
+
+function writePlayerStats(
+  nk: nkruntime.Nakama,
+  userId: string,
+  stats: PlayerStatsData,
+) {
+  nk.storageWrite([
+    {
+      collection: STATS_COLLECTION,
+      key: STATS_KEY,
+      userId,
+      value: stats,
+      permissionRead: 2, // public read
+      permissionWrite: 0, // server only write
+    },
+  ]);
+}
+
+/**
+ * Called internally after a game ends (win, draw, or forfeit).
+ * Updates both players' stats and leaderboard records.
+ */
+function submitMatchResult(
+  nk: nkruntime.Nakama,
+  logger: nkruntime.Logger,
+  state: GameState,
+) {
+  const playerXId = state.players.X;
+  const playerOId = state.players.O;
+
+  if (!playerXId || !playerOId) {
+    logger.warn("submitMatchResult: missing player IDs, skipping");
+    return;
+  }
+
+  const now = Date.now();
+
+  // Read current stats for both players
+  const statsX = readPlayerStats(nk, playerXId);
+  const statsO = readPlayerStats(nk, playerOId);
+
+  // Determine outcome for each player
+  let scoreX = 0;
+  let scoreO = 0;
+
+  if (state.winner === "X") {
+    statsX.wins++;
+    statsX.currentStreak++;
+    if (statsX.currentStreak > statsX.bestStreak) {
+      statsX.bestStreak = statsX.currentStreak;
+    }
+    statsO.losses++;
+    statsO.currentStreak = 0;
+    scoreX = SCORE_WIN;
+    scoreO = 0;
+  } else if (state.winner === "O") {
+    statsO.wins++;
+    statsO.currentStreak++;
+    if (statsO.currentStreak > statsO.bestStreak) {
+      statsO.bestStreak = statsO.currentStreak;
+    }
+    statsX.losses++;
+    statsX.currentStreak = 0;
+    scoreX = 0;
+    scoreO = SCORE_WIN;
+  } else if (state.winner === "draw") {
+    statsX.draws++;
+    statsO.draws++;
+    // Draws don't affect streaks — reset both
+    statsX.currentStreak = 0;
+    statsO.currentStreak = 0;
+    scoreX = SCORE_DRAW;
+    scoreO = SCORE_DRAW;
+  }
+
+  statsX.gamesPlayed++;
+  statsX.lastMatchAt = now;
+  statsO.gamesPlayed++;
+  statsO.lastMatchAt = now;
+
+  // Write updated stats
+  writePlayerStats(nk, playerXId, statsX);
+  writePlayerStats(nk, playerOId, statsO);
+
+  // Compute metadata for leaderboard display
+  const winRateX = statsX.gamesPlayed > 0
+    ? Math.round((statsX.wins / statsX.gamesPlayed) * 1000) / 10
+    : 0;
+  const winRateO = statsO.gamesPlayed > 0
+    ? Math.round((statsO.wins / statsO.gamesPlayed) * 1000) / 10
+    : 0;
+
+  // Write leaderboard records (incremental — only add if score > 0)
+  const usernameX = state.usernames[playerXId] || "Player";
+  const usernameO = state.usernames[playerOId] || "Player";
+
+  if (scoreX > 0) {
+    nk.leaderboardRecordWrite(
+      LEADERBOARD_ID,
+      playerXId,
+      usernameX,
+      scoreX,
+      0, // subscore
+      { wins: statsX.wins, gamesPlayed: statsX.gamesPlayed, winRate: winRateX },
+    );
+  } else {
+    // Even with 0 score, update metadata so leaderboard reflects latest stats
+    nk.leaderboardRecordWrite(
+      LEADERBOARD_ID,
+      playerXId,
+      usernameX,
+      0,
+      0,
+      { wins: statsX.wins, gamesPlayed: statsX.gamesPlayed, winRate: winRateX },
+    );
+  }
+
+  if (scoreO > 0) {
+    nk.leaderboardRecordWrite(
+      LEADERBOARD_ID,
+      playerOId,
+      usernameO,
+      scoreO,
+      0,
+      { wins: statsO.wins, gamesPlayed: statsO.gamesPlayed, winRate: winRateO },
+    );
+  } else {
+    nk.leaderboardRecordWrite(
+      LEADERBOARD_ID,
+      playerOId,
+      usernameO,
+      0,
+      0,
+      { wins: statsO.wins, gamesPlayed: statsO.gamesPlayed, winRate: winRateO },
+    );
+  }
+
+  logger.info(
+    "match result submitted: winner=%s, scoreX=%d, scoreO=%d",
+    state.winner,
+    scoreX,
+    scoreO,
+  );
+}
+
+// ---------------------------------------------------------------------------
 // RPC Functions
 // ---------------------------------------------------------------------------
 
@@ -183,9 +374,10 @@ function submitScore(
   nk: nkruntime.Nakama,
   payload: string,
 ): string {
-  // TODO: Phase 6 — implement leaderboard score submission
-  logger.info("submit_score called (stub)");
-  return JSON.stringify({ success: false, message: "Not implemented yet" });
+  // Score submission is now handled server-side automatically via submitMatchResult().
+  // This RPC is kept for backward compatibility but is a no-op.
+  logger.info("submit_score RPC called (scores are auto-submitted server-side)");
+  return JSON.stringify({ success: true, message: "Scores are auto-submitted by the server" });
 }
 
 function getPlayerStats(
@@ -194,16 +386,24 @@ function getPlayerStats(
   nk: nkruntime.Nakama,
   payload: string,
 ): string {
-  // TODO: Phase 6 — implement player stats retrieval
-  logger.info("get_player_stats called (stub)");
+  const userId = ctx.userId;
+  if (!userId) {
+    throw Error("No user ID in context");
+  }
+
+  const stats = readPlayerStats(nk, userId);
+  const winRate = stats.gamesPlayed > 0
+    ? Math.round((stats.wins / stats.gamesPlayed) * 1000) / 10
+    : 0;
+
   return JSON.stringify({
-    wins: 0,
-    losses: 0,
-    draws: 0,
-    gamesPlayed: 0,
-    currentStreak: 0,
-    bestStreak: 0,
-    winRate: 0,
+    wins: stats.wins,
+    losses: stats.losses,
+    draws: stats.draws,
+    gamesPlayed: stats.gamesPlayed,
+    currentStreak: stats.currentStreak,
+    bestStreak: stats.bestStreak,
+    winRate,
   });
 }
 
@@ -472,6 +672,7 @@ const matchLoop: nkruntime.MatchLoopFunction = function (
       gs.finishedAt = Date.now();
       dispatcher.matchLabelUpdate(JSON.stringify({ mode: gs.mode, status: "finished" }));
       broadcastGameOver(dispatcher, gs, "win");
+      submitMatchResult(nk, logger, gs);
       logger.info("game over: %s wins", winner);
     } else if (gs.moveCount === 9) {
       gs.winner = "draw";
@@ -479,6 +680,7 @@ const matchLoop: nkruntime.MatchLoopFunction = function (
       gs.finishedAt = Date.now();
       dispatcher.matchLabelUpdate(JSON.stringify({ mode: gs.mode, status: "finished" }));
       broadcastGameOver(dispatcher, gs, "draw");
+      submitMatchResult(nk, logger, gs);
       logger.info("game over: draw");
     } else {
       // Switch turns
@@ -525,6 +727,7 @@ const matchLeave: nkruntime.MatchLeaveFunction = function (
         OP_OPPONENT_LEFT,
         JSON.stringify({ winner: winnerSymbol, reason: "disconnect" }),
       );
+      submitMatchResult(nk, logger, gs);
       logger.info("player %s forfeited, %s wins", leavingSymbol, winnerSymbol);
     } else if (gs.status === "waiting") {
       // Still in lobby — free the slot for someone else
@@ -571,6 +774,22 @@ function initModule(
   nk: nkruntime.Nakama,
   initializer: nkruntime.Initializer,
 ) {
+  // Create leaderboard (idempotent — safe if already exists)
+  try {
+    nk.leaderboardCreate(
+      LEADERBOARD_ID,
+      true,                              // authoritative
+      nkruntime.SortOrder.DESCENDING,    // highest score first
+      nkruntime.Operator.INCREMENTAL,    // scores accumulate
+      undefined,                         // no reset schedule
+      undefined,                         // no metadata
+    );
+    logger.info("leaderboard '%s' created (or already exists)", LEADERBOARD_ID);
+  } catch (e) {
+    // Nakama throws if leaderboard already exists — safe to ignore
+    logger.debug("leaderboard '%s' already exists", LEADERBOARD_ID);
+  }
+
   // Register RPC functions
   initializer.registerRpc("create_private_match", createPrivateMatch);
   initializer.registerRpc("submit_score", submitScore);

@@ -73,3 +73,15 @@ export interface PlayerStats {
   bestStreak: number;
   winRate: number;
 }
+
+export interface LeaderboardRecord {
+  ownerId: string;
+  username: string;
+  score: number;
+  rank: number;
+  metadata: {
+    wins: number;
+    gamesPlayed: number;
+    winRate: number;
+  };
+}
