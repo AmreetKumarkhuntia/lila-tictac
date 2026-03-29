@@ -132,11 +132,7 @@ export default function AuthPage() {
         </h1>
 
         <div className="mx-auto mt-4 mb-6">
-          <TabGroup
-            options={AUTH_TABS}
-            value={mode}
-            onChange={switchMode}
-          />
+          <TabGroup options={AUTH_TABS} value={mode} onChange={switchMode} />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

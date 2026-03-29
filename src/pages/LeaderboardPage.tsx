@@ -48,11 +48,7 @@ export default function LeaderboardPage() {
         </div>
 
         <div className="mb-4">
-          <TabGroup
-            options={TABS}
-            value={activeTab}
-            onChange={setActiveTab}
-          />
+          <TabGroup options={TABS} value={activeTab} onChange={setActiveTab} />
         </div>
 
         <div className="rounded-2xl bg-white p-4 shadow-xl dark:bg-gray-900">

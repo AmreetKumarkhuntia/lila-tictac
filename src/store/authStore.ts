@@ -34,7 +34,12 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (session.isexpired(Date.now() / 1000)) {
         if (session.isrefreshexpired(Date.now() / 1000)) {
           clearAuth();
-          set({ session: null, username: null, isAuthenticated: false, isLoading: false });
+          set({
+            session: null,
+            username: null,
+            isAuthenticated: false,
+            isLoading: false,
+          });
           return;
         }
 
@@ -49,7 +54,12 @@ export const useAuthStore = create<AuthState>((set) => ({
           });
         } catch {
           clearAuth();
-          set({ session: null, username: null, isAuthenticated: false, isLoading: false });
+          set({
+            session: null,
+            username: null,
+            isAuthenticated: false,
+            isLoading: false,
+          });
         }
         return;
       }
@@ -62,7 +72,12 @@ export const useAuthStore = create<AuthState>((set) => ({
       });
     } catch {
       clearAuth();
-      set({ session: null, username: null, isAuthenticated: false, isLoading: false });
+      set({
+        session: null,
+        username: null,
+        isAuthenticated: false,
+        isLoading: false,
+      });
     }
   },
 }));

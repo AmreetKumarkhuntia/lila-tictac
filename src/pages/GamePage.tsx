@@ -229,12 +229,7 @@ export default function GamePage() {
         )}
 
         {!isGameOver && (
-          <Button
-            variant="secondary"
-            onClick={handleLeave}
-            fullWidth
-            size="sm"
-          >
+          <Button variant="secondary" onClick={handleLeave} fullWidth size="sm">
             Leave Match
           </Button>
         )}
