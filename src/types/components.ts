@@ -4,7 +4,11 @@
 // rendering logic rather than type definitions.
 // ============================================================
 
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from "react";
+import type {
+  ButtonHTMLAttributes,
+  InputHTMLAttributes,
+  ReactNode,
+} from "react";
 import type {
   CellValue,
   PlayerInfo,
@@ -51,6 +55,27 @@ export interface TabGroupProps<T extends string> {
   onChange: (value: T) => void;
   disabled?: boolean;
   size?: "sm" | "md";
+}
+
+// --- Table ------------------------------------------------------------------
+
+export interface TableColumn<T> {
+  key: string;
+  header: string;
+  align?: "left" | "right";
+  /** Responsive-hiding class, e.g. "hidden sm:table-cell" */
+  hiddenClass?: string;
+  render: (row: T, index: number) => ReactNode;
+}
+
+export interface TableProps<T> {
+  columns: TableColumn<T>[];
+  data: T[];
+  rowKey: (row: T) => string;
+  /** When true the row receives a highlight background */
+  highlightRow?: (row: T) => boolean;
+  /** Shown when `data` is empty */
+  emptyMessage?: string;
 }
 
 // --- Board & Cell -----------------------------------------------------------

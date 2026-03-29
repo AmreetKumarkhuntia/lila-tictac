@@ -1,4 +1,6 @@
-import type { LeaderboardProps } from "@/types/components";
+import Table from "@/components/Table";
+import type { LeaderboardProps, TableColumn } from "@/types/components";
+import type { LeaderboardRecord } from "@/types/leaderboard";
 
 function getRankBadge(rank: number): string | null {
   switch (rank) {
@@ -13,105 +15,105 @@ function getRankBadge(rank: number): string | null {
   }
 }
 
+const columns: TableColumn<LeaderboardRecord & { isCurrentUser: boolean }>[] = [
+  {
+    key: "rank",
+    header: "#",
+    render: (row) => {
+      const badge = getRankBadge(row.rank);
+      return badge ? (
+        <span
+          className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${badge}`}
+        >
+          {row.rank}
+        </span>
+      ) : (
+        <span className="inline-flex h-6 w-6 items-center justify-center text-xs text-gray-500 dark:text-gray-400">
+          {row.rank}
+        </span>
+      );
+    },
+  },
+  {
+    key: "player",
+    header: "Player",
+    render: (row) => (
+      <span
+        className={`font-medium ${
+          row.isCurrentUser
+            ? "text-indigo-600 dark:text-indigo-400"
+            : "text-gray-900 dark:text-white"
+        }`}
+      >
+        {row.username}
+        {row.isCurrentUser && (
+          <span className="ml-1.5 text-xs text-indigo-400 dark:text-indigo-500">
+            (you)
+          </span>
+        )}
+      </span>
+    ),
+  },
+  {
+    key: "score",
+    header: "Score",
+    align: "right",
+    render: (row) => (
+      <span className="font-semibold tabular-nums text-gray-900 dark:text-white">
+        {row.score}
+      </span>
+    ),
+  },
+  {
+    key: "wins",
+    header: "Wins",
+    align: "right",
+    hiddenClass: "hidden sm:table-cell",
+    render: (row) => (
+      <span className="tabular-nums text-gray-600 dark:text-gray-300">
+        {row.metadata.wins}
+      </span>
+    ),
+  },
+  {
+    key: "games",
+    header: "Games",
+    align: "right",
+    hiddenClass: "hidden sm:table-cell",
+    render: (row) => (
+      <span className="tabular-nums text-gray-600 dark:text-gray-300">
+        {row.metadata.gamesPlayed}
+      </span>
+    ),
+  },
+  {
+    key: "winRate",
+    header: "Win%",
+    align: "right",
+    render: (row) => (
+      <span className="tabular-nums text-gray-600 dark:text-gray-300">
+        {row.metadata.winRate.toFixed(1)}%
+      </span>
+    ),
+  },
+];
+
 export default function Leaderboard({
   records,
   currentUserId,
 }: LeaderboardProps) {
-  if (records.length === 0) {
-    return (
-      <div className="rounded-xl bg-gray-100 p-8 text-center dark:bg-gray-800">
-        <p className="text-gray-500 dark:text-gray-400">
-          No records yet. Play a game to appear on the leaderboard!
-        </p>
-      </div>
-    );
-  }
+  const data = records.map((record) => ({
+    ...record,
+    isCurrentUser: record.ownerId === currentUserId,
+  }));
 
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700">
-      <table className="w-full text-left text-sm">
-        <thead>
-          <tr className="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50">
-            <th className="px-3 py-2.5 font-semibold text-gray-600 dark:text-gray-300">
-              #
-            </th>
-            <th className="px-3 py-2.5 font-semibold text-gray-600 dark:text-gray-300">
-              Player
-            </th>
-            <th className="px-3 py-2.5 text-right font-semibold text-gray-600 dark:text-gray-300">
-              Score
-            </th>
-            <th className="hidden px-3 py-2.5 text-right font-semibold text-gray-600 dark:text-gray-300 sm:table-cell">
-              Wins
-            </th>
-            <th className="hidden px-3 py-2.5 text-right font-semibold text-gray-600 dark:text-gray-300 sm:table-cell">
-              Games
-            </th>
-            <th className="px-3 py-2.5 text-right font-semibold text-gray-600 dark:text-gray-300">
-              Win%
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {records.map((record) => {
-            const isCurrentUser = record.ownerId === currentUserId;
-            const badge = getRankBadge(record.rank);
-
-            return (
-              <tr
-                key={record.ownerId}
-                className={`border-b border-gray-100 transition-colors last:border-b-0 dark:border-gray-800 ${
-                  isCurrentUser
-                    ? "bg-indigo-50 dark:bg-indigo-950/30"
-                    : "hover:bg-gray-50 dark:hover:bg-gray-800/30"
-                }`}
-              >
-                <td className="px-3 py-2.5">
-                  {badge ? (
-                    <span
-                      className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${badge}`}
-                    >
-                      {record.rank}
-                    </span>
-                  ) : (
-                    <span className="inline-flex h-6 w-6 items-center justify-center text-xs text-gray-500 dark:text-gray-400">
-                      {record.rank}
-                    </span>
-                  )}
-                </td>
-                <td className="px-3 py-2.5">
-                  <span
-                    className={`font-medium ${
-                      isCurrentUser
-                        ? "text-indigo-600 dark:text-indigo-400"
-                        : "text-gray-900 dark:text-white"
-                    }`}
-                  >
-                    {record.username}
-                    {isCurrentUser && (
-                      <span className="ml-1.5 text-xs text-indigo-400 dark:text-indigo-500">
-                        (you)
-                      </span>
-                    )}
-                  </span>
-                </td>
-                <td className="px-3 py-2.5 text-right font-semibold tabular-nums text-gray-900 dark:text-white">
-                  {record.score}
-                </td>
-                <td className="hidden px-3 py-2.5 text-right tabular-nums text-gray-600 dark:text-gray-300 sm:table-cell">
-                  {record.metadata.wins}
-                </td>
-                <td className="hidden px-3 py-2.5 text-right tabular-nums text-gray-600 dark:text-gray-300 sm:table-cell">
-                  {record.metadata.gamesPlayed}
-                </td>
-                <td className="px-3 py-2.5 text-right tabular-nums text-gray-600 dark:text-gray-300">
-                  {record.metadata.winRate.toFixed(1)}%
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+    <Table
+      columns={columns}
+      data={data}
+      rowKey={(row) => row.ownerId}
+      highlightRow={(row) => row.isCurrentUser}
+      emptyMessage="No records yet. Play a game to appear on the leaderboard!"
+    />
   );
 }
