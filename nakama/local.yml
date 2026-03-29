@@ -1,5 +1,5 @@
 logger:
-  level: "DEBUG"
+  level: "INFO"
 runtime:
   js_entrypoint: "build/index.js"
 session:
