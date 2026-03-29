@@ -40,7 +40,9 @@ export function useConnectionStatus() {
     };
 
     const handleOnline = async () => {
-      useUiStore.getState().addToast("Connection restored — reconnecting...", "info");
+      useUiStore
+        .getState()
+        .addToast("Connection restored — reconnecting...", "info");
 
       if (!session || reconnecting.current) return;
       reconnecting.current = true;

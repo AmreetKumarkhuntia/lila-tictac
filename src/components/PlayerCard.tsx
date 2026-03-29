@@ -9,9 +9,7 @@ export default function PlayerCard({
   timer,
 }: PlayerCardProps) {
   const symbolColor =
-    symbol === "X"
-      ? "bg-indigo-500 text-white"
-      : "bg-rose-500 text-white";
+    symbol === "X" ? "bg-indigo-500 text-white" : "bg-rose-500 text-white";
 
   const activeRing = isActive
     ? "ring-2 ring-offset-2 ring-offset-white dark:ring-offset-gray-900 " +

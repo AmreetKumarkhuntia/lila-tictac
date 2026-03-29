@@ -82,11 +82,8 @@ export default function GameResult({
     headingColor = "text-rose-500 dark:text-rose-400";
   }
 
-  const scoreEarned = isWin || reason === "forfeit"
-    ? SCORE_WIN
-    : isDraw
-      ? SCORE_DRAW
-      : 0;
+  const scoreEarned =
+    isWin || reason === "forfeit" ? SCORE_WIN : isDraw ? SCORE_DRAW : 0;
 
   return (
     <div
@@ -96,18 +93,23 @@ export default function GameResult({
       aria-labelledby="game-result-heading"
       className="animate-[fadeIn_200ms_ease-out] rounded-2xl bg-white/95 p-8 text-center shadow-2xl backdrop-blur-sm dark:bg-gray-900/95"
     >
-      <h2 id="game-result-heading" className={`mb-2 text-3xl font-bold ${headingColor}`}>{heading}</h2>
-      <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
-        {subtext}
-      </p>
+      <h2
+        id="game-result-heading"
+        className={`mb-2 text-3xl font-bold ${headingColor}`}
+      >
+        {heading}
+      </h2>
+      <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">{subtext}</p>
 
       {/* Score earned badge */}
       <div className="mb-4">
-        <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${
-          scoreEarned > 0
-            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
-            : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
-        }`}>
+        <span
+          className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${
+            scoreEarned > 0
+              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+              : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+          }`}
+        >
           +{scoreEarned} point{scoreEarned !== 1 ? "s" : ""}
         </span>
       </div>
@@ -124,28 +126,53 @@ export default function GameResult({
         <div className="mb-5 rounded-lg bg-gray-50 px-4 py-3 dark:bg-gray-800/60">
           <div className="grid grid-cols-3 gap-3 text-center">
             <div>
-              <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{stats.wins}</p>
-              <p className="text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">Wins</p>
+              <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                {stats.wins}
+              </p>
+              <p className="text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                Wins
+              </p>
             </div>
             <div>
-              <p className="text-lg font-bold text-rose-500 dark:text-rose-400">{stats.losses}</p>
-              <p className="text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">Losses</p>
+              <p className="text-lg font-bold text-rose-500 dark:text-rose-400">
+                {stats.losses}
+              </p>
+              <p className="text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                Losses
+              </p>
             </div>
             <div>
-              <p className="text-lg font-bold text-gray-500 dark:text-gray-300">{stats.draws}</p>
-              <p className="text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">Draws</p>
+              <p className="text-lg font-bold text-gray-500 dark:text-gray-300">
+                {stats.draws}
+              </p>
+              <p className="text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                Draws
+              </p>
             </div>
           </div>
 
           <div className="mt-2 flex items-center justify-center gap-4 border-t border-gray-200 pt-2 text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
             {stats.currentStreak > 0 && (
-              <span>Streak: <span className="font-semibold text-amber-600 dark:text-amber-400">{stats.currentStreak}</span></span>
+              <span>
+                Streak:{" "}
+                <span className="font-semibold text-amber-600 dark:text-amber-400">
+                  {stats.currentStreak}
+                </span>
+              </span>
             )}
             {rank != null && (
-              <span>Rank: <span className="font-semibold text-indigo-600 dark:text-indigo-400">#{rank}</span></span>
+              <span>
+                Rank:{" "}
+                <span className="font-semibold text-indigo-600 dark:text-indigo-400">
+                  #{rank}
+                </span>
+              </span>
             )}
             {stats.winRate > 0 && (
-              <span>Win rate: <span className="font-semibold">{stats.winRate}%</span></span>
+              <span>
+                Win rate:{" "}
+                <span className="font-semibold">{stats.winRate}%</span>
+              </span>
             )}
           </div>
         </div>

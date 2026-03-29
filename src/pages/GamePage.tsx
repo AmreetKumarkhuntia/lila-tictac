@@ -38,7 +38,9 @@ export default function GamePage() {
   const session = useAuthStore((s) => s.session);
 
   // Post-match stats
-  const [postMatchStats, setPostMatchStats] = useState<PlayerStats | null>(null);
+  const [postMatchStats, setPostMatchStats] = useState<PlayerStats | null>(
+    null,
+  );
   const [postMatchRank, setPostMatchRank] = useState<number | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
   const statsFetched = useRef(false);
@@ -102,9 +104,10 @@ export default function GamePage() {
   const opponentSymbol = mySymbol === "X" ? "O" : "X";
 
   const isTimed = mode === "timed" && timers !== null;
-  const myTimer = isTimed && mySymbol
-    ? { timeRemaining: timers[mySymbol], timeLimit: timers.timeLimit }
-    : undefined;
+  const myTimer =
+    isTimed && mySymbol
+      ? { timeRemaining: timers[mySymbol], timeLimit: timers.timeLimit }
+      : undefined;
   const opponentTimer = isTimed
     ? { timeRemaining: timers[opponentSymbol], timeLimit: timers.timeLimit }
     : undefined;
@@ -205,7 +208,13 @@ export default function GamePage() {
           board={board}
           onCellClick={handleCellClick}
           winningLine={winningLine}
-          disabled={!isMyTurn || isGameOver || isWaiting || opponentDisconnected || movePending}
+          disabled={
+            !isMyTurn ||
+            isGameOver ||
+            isWaiting ||
+            opponentDisconnected ||
+            movePending
+          }
         />
 
         {mySymbol && (
@@ -229,7 +238,10 @@ export default function GamePage() {
       </div>
 
       {isGameOver && winner !== "" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" role="presentation">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+          role="presentation"
+        >
           <GameResult
             winner={winner}
             mySymbol={mySymbol}

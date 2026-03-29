@@ -20,9 +20,8 @@ const matchInit: nkruntime.MatchInitFunction = function (
     createdAt: now,
     startedAt: null,
     finishedAt: null,
-    timers: mode === "timed"
-      ? { X: 30, O: 30, lastMoveAt: 0, timeLimit: 30 }
-      : null,
+    timers:
+      mode === "timed" ? { X: 30, O: 30, lastMoveAt: 0, timeLimit: 30 } : null,
     disconnected: null,
     originalTickRate: mode === "timed" ? 10 : 0,
   };

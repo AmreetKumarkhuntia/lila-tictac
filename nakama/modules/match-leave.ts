@@ -38,13 +38,19 @@ const matchLeave: nkruntime.MatchLeaveFunction = function (
 
         logger.info(
           "player %s (%s) disconnected, grace period started (%ds)",
-          presence.userId, leavingSymbol, RECONNECT_GRACE_SECONDS,
+          presence.userId,
+          leavingSymbol,
+          RECONNECT_GRACE_SECONDS,
         );
       }
     } else if (gs.status === "waiting") {
       gs.players[leavingSymbol] = null;
       delete gs.usernames[presence.userId];
-      logger.info("player %s left waiting room, slot %s freed", presence.userId, leavingSymbol);
+      logger.info(
+        "player %s left waiting room, slot %s freed",
+        presence.userId,
+        leavingSymbol,
+      );
     }
     // If status === "finished", nothing to do — match will clean up
   }

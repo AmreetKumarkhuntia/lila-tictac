@@ -34,7 +34,10 @@ function findWinningLine(board: CellValue[][]): [number, number][] | null {
   return null;
 }
 
-function symbolForUserId(state: GameState, userId: string): PlayerSymbol | null {
+function symbolForUserId(
+  state: GameState,
+  userId: string,
+): PlayerSymbol | null {
   if (state.players.X === userId) return "X";
   if (state.players.O === userId) return "O";
   return null;
@@ -50,7 +53,11 @@ function broadcastState(
     moveCount: state.moveCount,
     status: state.status,
     timers: state.timers
-      ? { X: state.timers.X, O: state.timers.O, timeLimit: state.timers.timeLimit }
+      ? {
+          X: state.timers.X,
+          O: state.timers.O,
+          timeLimit: state.timers.timeLimit,
+        }
       : null,
     opponentDisconnected: state.disconnected !== null,
   });

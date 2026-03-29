@@ -4,6 +4,7 @@ import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { useAuthStore } from "@/store/authStore";
 import Leaderboard from "@/components/Leaderboard";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import { ArrowLeftIcon, RefreshIcon } from "@/components/icons";
 import type { PlayerStats } from "@/types/leaderboard";
 
 type Tab = "rankings" | "stats";
@@ -24,18 +25,7 @@ export default function LeaderboardPage() {
             className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-200 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
             title="Back to Home"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              className="h-5 w-5"
-            >
-              <path
-                fillRule="evenodd"
-                d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z"
-                clipRule="evenodd"
-              />
-            </svg>
+            <ArrowLeftIcon className="h-5 w-5" />
           </button>
           <h1 className="text-xl font-bold">Leaderboard</h1>
           <button
@@ -44,18 +34,9 @@ export default function LeaderboardPage() {
             className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-200 hover:text-gray-700 disabled:opacity-50 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
             title="Refresh"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
+            <RefreshIcon
               className={`h-5 w-5 ${isLoading ? "animate-spin" : ""}`}
-            >
-              <path
-                fillRule="evenodd"
-                d="M15.312 11.424a5.5 5.5 0 01-9.201 2.466l-.312-.311h2.433a.75.75 0 000-1.5H4.598a.75.75 0 00-.75.75v3.634a.75.75 0 001.5 0v-2.033l.312.312a7 7 0 0011.712-3.138.75.75 0 00-1.449-.39zm-10.624-2.85a5.5 5.5 0 019.201-2.466l.312.312H11.77a.75.75 0 000 1.5h3.634a.75.75 0 00.75-.75V3.536a.75.75 0 00-1.5 0v2.034l-.312-.313A7 7 0 002.63 8.395a.75.75 0 001.45.39z"
-                clipRule="evenodd"
-              />
-            </svg>
+            />
           </button>
         </div>
 
@@ -160,13 +141,29 @@ function StatsPanel({
       </div>
 
       <div className="grid grid-cols-3 gap-2">
-        <StatCard label="Wins" value={stats.wins} color="text-emerald-600 dark:text-emerald-400" />
-        <StatCard label="Losses" value={stats.losses} color="text-rose-600 dark:text-rose-400" />
-        <StatCard label="Draws" value={stats.draws} color="text-gray-600 dark:text-gray-300" />
+        <StatCard
+          label="Wins"
+          value={stats.wins}
+          color="text-emerald-600 dark:text-emerald-400"
+        />
+        <StatCard
+          label="Losses"
+          value={stats.losses}
+          color="text-rose-600 dark:text-rose-400"
+        />
+        <StatCard
+          label="Draws"
+          value={stats.draws}
+          color="text-gray-600 dark:text-gray-300"
+        />
       </div>
 
       <div className="grid grid-cols-3 gap-2">
-        <StatCard label="Games" value={stats.gamesPlayed} color="text-gray-900 dark:text-white" />
+        <StatCard
+          label="Games"
+          value={stats.gamesPlayed}
+          color="text-gray-900 dark:text-white"
+        />
         <StatCard
           label="Streak"
           value={stats.currentStreak}

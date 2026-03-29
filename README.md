@@ -4,15 +4,15 @@ Production-ready multiplayer Tic-Tac-Toe with server-authoritative Nakama backen
 
 ## Tech Stack
 
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| Frontend | React 19 + TypeScript + Vite | UI, client-side rendering |
-| Styling | Tailwind CSS | Responsive, mobile-first design |
-| State | Zustand | Client state (auth, game, UI) |
-| Backend | Nakama 3.x | Server-authoritative game engine |
-| Database | PostgreSQL | Nakama persistence |
-| Runtime | Nakama TypeScript Runtime | Custom server logic (match handler, RPCs) |
-| Infra | Docker + Docker Compose | Local dev and deployment |
+| Layer    | Technology                   | Purpose                                   |
+| -------- | ---------------------------- | ----------------------------------------- |
+| Frontend | React 19 + TypeScript + Vite | UI, client-side rendering                 |
+| Styling  | Tailwind CSS                 | Responsive, mobile-first design           |
+| State    | Zustand                      | Client state (auth, game, UI)             |
+| Backend  | Nakama 3.x                   | Server-authoritative game engine          |
+| Database | PostgreSQL                   | Nakama persistence                        |
+| Runtime  | Nakama TypeScript Runtime    | Custom server logic (match handler, RPCs) |
+| Infra    | Docker + Docker Compose      | Local dev and deployment                  |
 
 ## Architecture
 
@@ -37,11 +37,11 @@ See [docs/architecture.md](docs/architecture.md) for the full system diagram, da
 
 ## Prerequisites
 
-| Tool | Version |
-|------|---------|
-| Node.js | >= 18.x |
-| npm | >= 9.x |
-| Docker | >= 24.x |
+| Tool           | Version   |
+| -------------- | --------- |
+| Node.js        | >= 18.x   |
+| npm            | >= 9.x    |
+| Docker         | >= 24.x   |
 | Docker Compose | >= 2.20.x |
 
 ## Quick Start
@@ -103,17 +103,17 @@ lila-tictac/
 
 ## Available Scripts
 
-| Command | Purpose |
-|---------|---------|
-| `npm run dev` | Start Vite dev server with HMR (`localhost:5173`) |
-| `npm run build` | Production build to `dist/` |
-| `npm run preview` | Preview production build locally |
-| `npm run lint` | Run ESLint |
-| `npm run typecheck` | Run TypeScript type checking |
-| `docker compose up -d` | Start Nakama + PostgreSQL |
-| `docker compose down` | Stop all containers |
-| `docker compose logs -f nakama` | View Nakama server logs |
-| `docker compose restart nakama` | Restart Nakama (after module changes) |
+| Command                         | Purpose                                           |
+| ------------------------------- | ------------------------------------------------- |
+| `npm run dev`                   | Start Vite dev server with HMR (`localhost:5173`) |
+| `npm run build`                 | Production build to `dist/`                       |
+| `npm run preview`               | Preview production build locally                  |
+| `npm run lint`                  | Run ESLint                                        |
+| `npm run typecheck`             | Run TypeScript type checking                      |
+| `docker compose up -d`          | Start Nakama + PostgreSQL                         |
+| `docker compose down`           | Stop all containers                               |
+| `docker compose logs -f nakama` | View Nakama server logs                           |
+| `docker compose restart nakama` | Restart Nakama (after module changes)             |
 
 ## Configuration
 
@@ -121,23 +121,23 @@ lila-tictac/
 
 Copy `.env.example` to `.env` and adjust:
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `VITE_NAKAMA_HOST` | `127.0.0.1` | Nakama server host |
-| `VITE_NAKAMA_PORT` | `7350` | Nakama HTTP API port |
-| `VITE_NAKAMA_SSL` | `false` | Use HTTPS/WSS (set `true` in production) |
-| `VITE_NAKAMA_SERVER_KEY` | `defaultkey` | Nakama server key |
-| `VITE_TIMER_SECONDS` | `30` | Seconds per move in timed mode |
+| Variable                 | Default      | Description                              |
+| ------------------------ | ------------ | ---------------------------------------- |
+| `VITE_NAKAMA_HOST`       | `127.0.0.1`  | Nakama server host                       |
+| `VITE_NAKAMA_PORT`       | `7350`       | Nakama HTTP API port                     |
+| `VITE_NAKAMA_SSL`        | `false`      | Use HTTPS/WSS (set `true` in production) |
+| `VITE_NAKAMA_SERVER_KEY` | `defaultkey` | Nakama server key                        |
+| `VITE_TIMER_SECONDS`     | `30`         | Seconds per move in timed mode           |
 
 ### Ports
 
-| Service | Port | Purpose |
-|---------|------|---------|
-| Nakama HTTP API | 7350 | REST API |
-| Nakama gRPC | 7349 | Internal |
-| Nakama WebSocket | 7351 | Real-time communication |
-| Frontend (dev) | 5173 | Vite dev server |
-| PostgreSQL | 5432 | Database (Docker-internal) |
+| Service          | Port | Purpose                    |
+| ---------------- | ---- | -------------------------- |
+| Nakama HTTP API  | 7350 | REST API                   |
+| Nakama gRPC      | 7349 | Internal                   |
+| Nakama WebSocket | 7351 | Real-time communication    |
+| Frontend (dev)   | 5173 | Vite dev server            |
+| PostgreSQL       | 5432 | Database (Docker-internal) |
 
 ## Testing Multiplayer
 
@@ -159,14 +159,14 @@ See [docs/deployment.md](docs/deployment.md) for the full deployment guide cover
 
 ## Documentation
 
-| Doc | Description |
-|-----|-------------|
-| [docs/plan.md](docs/plan.md) | Implementation plan and phase breakdown |
+| Doc                                          | Description                                      |
+| -------------------------------------------- | ------------------------------------------------ |
+| [docs/plan.md](docs/plan.md)                 | Implementation plan and phase breakdown          |
 | [docs/architecture.md](docs/architecture.md) | System architecture, data flow, design decisions |
-| [docs/setup.md](docs/setup.md) | Detailed setup and troubleshooting |
-| [docs/api.md](docs/api.md) | API and RPC reference |
-| [docs/game-logic.md](docs/game-logic.md) | Server-side game logic and match handler |
-| [docs/matchmaking.md](docs/matchmaking.md) | Matchmaking system design |
-| [docs/frontend.md](docs/frontend.md) | Frontend architecture and components |
-| [docs/testing.md](docs/testing.md) | Testing strategy |
-| [docs/deployment.md](docs/deployment.md) | Deployment process and configuration |
+| [docs/setup.md](docs/setup.md)               | Detailed setup and troubleshooting               |
+| [docs/api.md](docs/api.md)                   | API and RPC reference                            |
+| [docs/game-logic.md](docs/game-logic.md)     | Server-side game logic and match handler         |
+| [docs/matchmaking.md](docs/matchmaking.md)   | Matchmaking system design                        |
+| [docs/frontend.md](docs/frontend.md)         | Frontend architecture and components             |
+| [docs/testing.md](docs/testing.md)           | Testing strategy                                 |
+| [docs/deployment.md](docs/deployment.md)     | Deployment process and configuration             |

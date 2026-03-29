@@ -12,7 +12,9 @@ function createPrivateMatch(
         mode = "timed";
       }
     } catch (e) {
-      logger.warn("create_private_match: invalid payload, defaulting to classic");
+      logger.warn(
+        "create_private_match: invalid payload, defaulting to classic",
+      );
     }
   }
 
@@ -28,8 +30,13 @@ function submitScore(
 ): string {
   // Score submission is now handled server-side automatically via submitMatchResult().
   // This RPC is kept for backward compatibility but is a no-op.
-  logger.info("submit_score RPC called (scores are auto-submitted server-side)");
-  return JSON.stringify({ success: true, message: "Scores are auto-submitted by the server" });
+  logger.info(
+    "submit_score RPC called (scores are auto-submitted server-side)",
+  );
+  return JSON.stringify({
+    success: true,
+    message: "Scores are auto-submitted by the server",
+  });
 }
 
 function matchmakerMatched(
@@ -62,9 +69,10 @@ function getPlayerStats(
   }
 
   const stats = readPlayerStats(nk, userId);
-  const winRate = stats.gamesPlayed > 0
-    ? Math.round((stats.wins / stats.gamesPlayed) * 1000) / 10
-    : 0;
+  const winRate =
+    stats.gamesPlayed > 0
+      ? Math.round((stats.wins / stats.gamesPlayed) * 1000) / 10
+      : 0;
 
   return JSON.stringify({
     wins: stats.wins,

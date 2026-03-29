@@ -72,6 +72,7 @@ State after matchInit:
 Called when a player tries to join. Return `{ accept }` or `{ reject }`.
 
 Validation:
+
 - If `state.players.X` and `state.players.O` are both assigned → **reject** (match full)
 - If `state.status === "finished"` → **reject** (game already over)
 - Otherwise → **accept**
@@ -81,6 +82,7 @@ Validation:
 Called after a player successfully joins.
 
 For each joining presence:
+
 1. If `state.players.X === null`, assign as X
 2. Else if `state.players.O === null`, assign as O
 3. If both players assigned, set `status: "playing"` and `startedAt: tick`
@@ -104,12 +106,14 @@ State after both players join:
 Called every tick (when tick rate > 0). Processes all incoming messages.
 
 For each message:
+
 1. Parse `{ row, col }` from message data
 2. **Validate the move** (see Move Validation below)
 3. If invalid → send error to sender only, skip
 4. If valid → apply move, check win/draw, broadcast updated state
 
 For timed mode (runs on every tick):
+
 1. Calculate elapsed time since last move (or game start)
 2. Subtract elapsed from current player's remaining time
 3. If remaining time <= 0 → auto-forfeit, set winner as opponent
@@ -137,14 +141,14 @@ Called when the server is shutting down or match is being forcibly terminated.
 
 All validation happens server-side in `matchLoop`. A move is rejected if ANY of these conditions are true:
 
-| # | Rule | Error Message |
-|---|------|---------------|
-| 1 | Game is not in "playing" status | "Game has not started yet" |
-| 2 | Sender is not one of the assigned players | "You are not a player in this game" |
-| 3 | It is not the sender's turn | "It is not your turn" |
-| 4 | Row index is out of bounds (< 0 or > 2) | "Invalid row" |
-| 5 | Column index is out of bounds (< 0 or > 2) | "Invalid column" |
-| 6 | Cell is already occupied | "Cell is already taken" |
+| #   | Rule                                       | Error Message                       |
+| --- | ------------------------------------------ | ----------------------------------- |
+| 1   | Game is not in "playing" status            | "Game has not started yet"          |
+| 2   | Sender is not one of the assigned players  | "You are not a player in this game" |
+| 3   | It is not the sender's turn                | "It is not your turn"               |
+| 4   | Row index is out of bounds (< 0 or > 2)    | "Invalid row"                       |
+| 5   | Column index is out of bounds (< 0 or > 2) | "Invalid column"                    |
+| 6   | Cell is already occupied                   | "Cell is already taken"             |
 
 If all checks pass, the move is applied:
 
@@ -163,16 +167,48 @@ After every valid move, check for terminal states.
 ```typescript
 const WIN_LINES = [
   // Rows
-  [[0,0], [0,1], [0,2]],
-  [[1,0], [1,1], [1,2]],
-  [[2,0], [2,1], [2,2]],
+  [
+    [0, 0],
+    [0, 1],
+    [0, 2],
+  ],
+  [
+    [1, 0],
+    [1, 1],
+    [1, 2],
+  ],
+  [
+    [2, 0],
+    [2, 1],
+    [2, 2],
+  ],
   // Columns
-  [[0,0], [1,0], [2,0]],
-  [[0,1], [1,1], [2,1]],
-  [[0,2], [1,2], [2,2]],
+  [
+    [0, 0],
+    [1, 0],
+    [2, 0],
+  ],
+  [
+    [0, 1],
+    [1, 1],
+    [2, 1],
+  ],
+  [
+    [0, 2],
+    [1, 2],
+    [2, 2],
+  ],
   // Diagonals
-  [[0,0], [1,1], [2,2]],
-  [[0,2], [1,1], [2,0]],
+  [
+    [0, 0],
+    [1, 1],
+    [2, 2],
+  ],
+  [
+    [0, 2],
+    [1, 1],
+    [2, 0],
+  ],
 ];
 
 function checkWinner(board: CellValue[][]): "" | PlayerSymbol {
@@ -209,6 +245,7 @@ if (winner !== "") {
 ```
 
 On game finish, broadcast:
+
 ```json
 {
   "event": "game_over",
@@ -263,6 +300,7 @@ state.timers.lastMoveAt = tick;
 ### Client Timer Display
 
 Server broadcasts timer values with every state update. Client displays countdown:
+
 - Remaining > 10s: green
 - 10s > Remaining > 5s: yellow
 - Remaining <= 5s: red + pulse animation
@@ -271,17 +309,17 @@ Server broadcasts timer values with every state update. Client displays countdow
 
 ### Client → Server
 
-| Op Code | Name | Data | Description |
-|---------|------|------|-------------|
-| 1 | MOVE | `{ row, col }` | Player makes a move |
+| Op Code | Name | Data           | Description         |
+| ------- | ---- | -------------- | ------------------- |
+| 1       | MOVE | `{ row, col }` | Player makes a move |
 
 ### Server → Client
 
-| Op Code | Name | Data | Description |
-|---------|------|------|-------------|
-| 10 | STATE_UPDATE | `{ board, currentPlayer, moveCount, timers }` | Full state broadcast after each move |
-| 11 | GAME_START | `{ players, mode }` | Game has started (2 players joined) |
-| 12 | GAME_OVER | `{ winner, board, winningLine }` | Game ended (win/draw/timeout) |
-| 13 | ERROR | `{ message }` | Move validation error (sent to mover only) |
-| 14 | OPPONENT_LEFT | `{ winner }` | Opponent disconnected, remaining player wins |
-| 15 | MATCH_TERMINATED | `{}` | Server shutting down match |
+| Op Code | Name             | Data                                          | Description                                  |
+| ------- | ---------------- | --------------------------------------------- | -------------------------------------------- |
+| 10      | STATE_UPDATE     | `{ board, currentPlayer, moveCount, timers }` | Full state broadcast after each move         |
+| 11      | GAME_START       | `{ players, mode }`                           | Game has started (2 players joined)          |
+| 12      | GAME_OVER        | `{ winner, board, winningLine }`              | Game ended (win/draw/timeout)                |
+| 13      | ERROR            | `{ message }`                                 | Move validation error (sent to mover only)   |
+| 14      | OPPONENT_LEFT    | `{ winner }`                                  | Opponent disconnected, remaining player wins |
+| 15      | MATCH_TERMINATED | `{}`                                          | Server shutting down match                   |

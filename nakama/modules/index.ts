@@ -7,11 +7,11 @@ let InitModule: nkruntime.InitModule = function (
   try {
     nk.leaderboardCreate(
       LEADERBOARD_ID,
-      true,                              // authoritative
-      nkruntime.SortOrder.DESCENDING,    // highest score first
-      nkruntime.Operator.INCREMENTAL,    // scores accumulate
-      undefined,                         // no reset schedule
-      undefined,                         // no metadata
+      true, // authoritative
+      nkruntime.SortOrder.DESCENDING, // highest score first
+      nkruntime.Operator.INCREMENTAL, // scores accumulate
+      undefined, // no reset schedule
+      undefined, // no metadata
     );
     logger.info("leaderboard '%s' created (or already exists)", LEADERBOARD_ID);
   } catch (e) {

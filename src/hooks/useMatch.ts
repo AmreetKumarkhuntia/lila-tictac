@@ -1,7 +1,10 @@
 import { useCallback } from "react";
 import { getSocket, disconnectSocket } from "@/lib/nakama";
 import { handleMatchData } from "@/lib/matchDataHandler";
-import { persistMatchId, clearPersistedMatchId } from "@/hooks/useConnectionStatus";
+import {
+  persistMatchId,
+  clearPersistedMatchId,
+} from "@/hooks/useConnectionStatus";
 import { useAuthStore } from "@/store/authStore";
 import { useGameStore } from "@/store/gameStore";
 import { useUiStore } from "@/store/uiStore";
@@ -33,7 +36,8 @@ export function useMatch() {
         useUiStore.getState().setLoading(false);
       } catch (err) {
         console.error("Failed to join match:", err);
-        const message = err instanceof Error ? err.message : "Failed to join match";
+        const message =
+          err instanceof Error ? err.message : "Failed to join match";
         useUiStore.getState().setError(message);
         useUiStore.getState().setLoading(false);
         clearPersistedMatchId();

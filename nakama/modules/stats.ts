@@ -121,12 +121,14 @@ function submitMatchResult(
     writePlayerStats(nk, logger, playerXId, statsX);
     writePlayerStats(nk, logger, playerOId, statsO);
 
-    const winRateX = statsX.gamesPlayed > 0
-      ? Math.round((statsX.wins / statsX.gamesPlayed) * 1000) / 10
-      : 0;
-    const winRateO = statsO.gamesPlayed > 0
-      ? Math.round((statsO.wins / statsO.gamesPlayed) * 1000) / 10
-      : 0;
+    const winRateX =
+      statsX.gamesPlayed > 0
+        ? Math.round((statsX.wins / statsX.gamesPlayed) * 1000) / 10
+        : 0;
+    const winRateO =
+      statsO.gamesPlayed > 0
+        ? Math.round((statsO.wins / statsO.gamesPlayed) * 1000) / 10
+        : 0;
 
     const usernameX = state.usernames[playerXId] || "Player";
     const usernameO = state.usernames[playerOId] || "Player";
@@ -139,7 +141,11 @@ function submitMatchResult(
         usernameX,
         scoreX,
         0,
-        { wins: statsX.wins, gamesPlayed: statsX.gamesPlayed, winRate: winRateX },
+        {
+          wins: statsX.wins,
+          gamesPlayed: statsX.gamesPlayed,
+          winRate: winRateX,
+        },
       );
     } catch (e) {
       logger.error("failed to write leaderboard for X (%s): %s", playerXId, e);
@@ -152,7 +158,11 @@ function submitMatchResult(
         usernameO,
         scoreO,
         0,
-        { wins: statsO.wins, gamesPlayed: statsO.gamesPlayed, winRate: winRateO },
+        {
+          wins: statsO.wins,
+          gamesPlayed: statsO.gamesPlayed,
+          winRate: winRateO,
+        },
       );
     } catch (e) {
       logger.error("failed to write leaderboard for O (%s): %s", playerOId, e);

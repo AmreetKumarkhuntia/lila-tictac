@@ -39,7 +39,10 @@ export function useMatchmaker() {
         return;
       }
 
-      console.log("[matchmaker] findMatch started", { mode, userId: session.user_id });
+      console.log("[matchmaker] findMatch started", {
+        mode,
+        userId: session.user_id,
+      });
       useGameStore.getState().setMatchmakingStatus("searching");
       useUiStore.getState().clearError();
 
@@ -60,7 +63,10 @@ export function useMatchmaker() {
           useGameStore.getState().setMatchmakingTicket(null);
 
           if (!matched.match_id) {
-            console.error("[matchmaker] no match_id in matched response", matched);
+            console.error(
+              "[matchmaker] no match_id in matched response",
+              matched,
+            );
             useUiStore.getState().setError("Matchmaker returned no match ID");
             useGameStore.getState().setMatchmakingStatus("idle");
             return;
@@ -74,14 +80,19 @@ export function useMatchmaker() {
 
             console.log("[matchmaker] joining match", matched.match_id);
             const match = await socket.joinMatch(matched.match_id);
-            console.log("[matchmaker] joined match successfully", match.match_id);
+            console.log(
+              "[matchmaker] joined match successfully",
+              match.match_id,
+            );
             useGameStore.getState().setMatchId(match.match_id);
             navigate(`/game/${match.match_id}`);
           } catch (err) {
             console.error("[matchmaker] failed to join matched game:", err);
-            useUiStore.getState().setError(
-              err instanceof Error ? err.message : "Failed to join match",
-            );
+            useUiStore
+              .getState()
+              .setError(
+                err instanceof Error ? err.message : "Failed to join match",
+              );
             useGameStore.getState().setMatchmakingStatus("idle");
           }
         };
@@ -95,13 +106,18 @@ export function useMatchmaker() {
           { mode }, // stringProperties
         );
 
-        console.log("[matchmaker] ticket added", { ticket: ticket.ticket, mode });
+        console.log("[matchmaker] ticket added", {
+          ticket: ticket.ticket,
+          mode,
+        });
         useGameStore.getState().setMatchmakingTicket(ticket.ticket);
       } catch (err) {
         console.error("[matchmaker] failed to start matchmaking:", err);
-        useUiStore.getState().setError(
-          err instanceof Error ? err.message : "Failed to start matchmaking",
-        );
+        useUiStore
+          .getState()
+          .setError(
+            err instanceof Error ? err.message : "Failed to start matchmaking",
+          );
         useGameStore.getState().setMatchmakingStatus("idle");
       }
     },
@@ -149,17 +165,22 @@ export function useMatchmaker() {
           { mode },
         );
 
-        const payload = typeof response.payload === "string"
-          ? JSON.parse(response.payload)
-          : response.payload;
+        const payload =
+          typeof response.payload === "string"
+            ? JSON.parse(response.payload)
+            : response.payload;
 
         useUiStore.getState().setLoading(false);
         return (payload as Record<string, string>).matchId ?? null;
       } catch (err) {
         console.error("Failed to create private match:", err);
-        useUiStore.getState().setError(
-          err instanceof Error ? err.message : "Failed to create private match",
-        );
+        useUiStore
+          .getState()
+          .setError(
+            err instanceof Error
+              ? err.message
+              : "Failed to create private match",
+          );
         useUiStore.getState().setLoading(false);
         return null;
       }
@@ -191,9 +212,13 @@ export function useMatchmaker() {
         navigate(`/game/${match.match_id}`);
       } catch (err) {
         console.error("Failed to join private match:", err);
-        useUiStore.getState().setError(
-          err instanceof Error ? err.message : "Invalid match ID or match is full",
-        );
+        useUiStore
+          .getState()
+          .setError(
+            err instanceof Error
+              ? err.message
+              : "Invalid match ID or match is full",
+          );
         useUiStore.getState().setLoading(false);
       }
     },
@@ -221,9 +246,11 @@ export function useMatchmaker() {
         return match.match_id;
       } catch (err) {
         console.error("Failed to join created match:", err);
-        useUiStore.getState().setError(
-          err instanceof Error ? err.message : "Failed to join match",
-        );
+        useUiStore
+          .getState()
+          .setError(
+            err instanceof Error ? err.message : "Failed to join match",
+          );
         disconnectSocket();
         return null;
       }
