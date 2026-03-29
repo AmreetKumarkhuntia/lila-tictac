@@ -10,9 +10,9 @@ Production-ready multiplayer Tic-Tac-Toe with server-authoritative Nakama backen
 | Styling  | Tailwind CSS                 | Responsive, mobile-first design           |
 | State    | Zustand                      | Client state (auth, game, UI)             |
 | Backend  | Nakama 3.x                   | Server-authoritative game engine          |
-| Database | PostgreSQL                   | Nakama persistence                        |
+| Database | PostgreSQL (Neon)            | Nakama persistence                        |
 | Runtime  | Nakama TypeScript Runtime    | Custom server logic (match handler, RPCs) |
-| Infra    | Docker + Docker Compose      | Local dev and deployment                  |
+| Infra    | Railway + Vercel + Docker    | Deployment and local dev                  |
 
 ## Architecture
 
@@ -94,9 +94,14 @@ lila-tictac/
 ├── nakama/
 │   ├── modules/                # Server-side game logic
 │   │   └── tic-tac-toe.ts      # Match handler + RPCs
+│   ├── entrypoint.sh           # Nakama startup script (reads DB env vars)
+│   ├── setup-db.sql            # SQL to create dedicated Nakama user/DB
+│   ├── local.yml               # Nakama config (runtime, logging, socket)
 │   └── Dockerfile              # Custom Nakama image with modules
 ├── docs/                       # Full documentation
-├── docker-compose.yml          # Nakama + PostgreSQL
+├── docker-compose.yml          # Nakama + PostgreSQL (local dev)
+├── render.yaml                 # Render deployment blueprint
+├── fly.toml                    # Fly.io deployment config
 ├── .env.example                # Environment variable template
 └── package.json
 ```
@@ -129,6 +134,16 @@ Copy `.env.example` to `.env` and adjust:
 | `VITE_NAKAMA_SERVER_KEY` | `defaultkey` | Nakama server key                        |
 | `VITE_TIMER_SECONDS`     | `30`         | Seconds per move in timed mode           |
 
+#### Nakama Database (Railway / production)
+
+| Variable              | Default | Description               |
+| --------------------- | ------- | ------------------------- |
+| `NAKAMA_DB_HOST`      | —       | PostgreSQL host           |
+| `NAKAMA_DB_PORT`      | `5432`  | PostgreSQL port           |
+| `NAKAMA_DB_USER`      | —       | Database user             |
+| `NAKAMA_DB_PASSWORD`  | —       | Database password         |
+| `NAKAMA_DB_NAME`      | `nakama`| Database name             |
+
 ### Ports
 
 | Service          | Port | Purpose                    |
@@ -150,12 +165,58 @@ Copy `.env.example` to `.env` and adjust:
 
 ## Deployment
 
-See [docs/deployment.md](docs/deployment.md) for the full deployment guide covering:
+The production deployment uses **Railway** (Nakama) + **Neon** (PostgreSQL) + **Vercel** (frontend).
 
-- Cloud VM provisioning (DigitalOcean, AWS EC2, GCP)
-- Production Nakama configuration with SSL (Caddy reverse proxy)
-- Frontend deployment to Vercel, Netlify, or Cloudflare Pages
-- Database backup and maintenance
+### Live URL
+
+Frontend: [https://lila-tictac.vercel.app/](https://lila-tictac.vercel.app/)
+
+### 1. Set up the database (Neon)
+
+Run `nakama/setup-db.sql` in your Neon SQL editor (replace `neondb_owner` with your actual Neon user and `CHANGE_ME` with a secure password):
+
+```sql
+CREATE USER nakama WITH PASSWORD 'your_password';
+GRANT nakama TO your_neon_user;
+CREATE DATABASE nakama OWNER nakama;
+\c nakama
+GRANT ALL ON SCHEMA public TO nakama;
+```
+
+### 2. Deploy Nakama to Railway
+
+1. Create a new **Web Service** on Railway, connect your GitHub repo
+2. Set **Docker** runtime with `nakama/Dockerfile`
+3. Set **Custom Start Command** to `/nakama/entrypoint.sh`
+4. Set **Target Port** to `7350`
+5. Add environment variables:
+
+| Variable              | Value                                    |
+| --------------------- | ---------------------------------------- |
+| `NAKAMA_DB_HOST`      | `your-neon-host.neon.tech`               |
+| `NAKAMA_DB_PORT`      | `5432`                                   |
+| `NAKAMA_DB_USER`      | `nakama`                                 |
+| `NAKAMA_DB_PASSWORD`  | your password                            |
+| `NAKAMA_DB_NAME`      | `nakama`                                 |
+
+### 3. Deploy frontend to Vercel
+
+1. Connect your GitHub repo to Vercel (auto-detects Vite)
+2. Set environment variables in **Settings → Environment Variables**:
+
+| Variable                 | Value                          |
+| ------------------------ | ------------------------------ |
+| `VITE_NAKAMA_HOST`       | `your-railway-app.up.railway.app` |
+| `VITE_NAKAMA_PORT`       | `443`                          |
+| `VITE_NAKAMA_SSL`        | `true`                         |
+| `VITE_NAKAMA_SERVER_KEY` | `defaultkey`                   |
+| `VITE_TIMER_SECONDS`     | `30`                           |
+
+3. Redeploy after setting env vars
+
+> **Note:** Railway free tier only exposes a single HTTP port (7350). WebSocket realtime connections (port 7351) are not available on the free plan. For full realtime multiplayer, upgrade to a paid Railway plan or use a platform that supports multiple ports.
+
+See [docs/deployment.md](docs/deployment.md) for additional deployment options.
 
 ## Documentation
 
