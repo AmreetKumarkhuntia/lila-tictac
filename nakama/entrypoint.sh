@@ -13,4 +13,4 @@ exec /nakama/nakama \
   --name nakama1 \
   --database.address "${DB_ADDR}" \
   --config /nakama/data/local.yml \
-  --api.port "${API_PORT}"
+  --socket.port "${API_PORT}"
