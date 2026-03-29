@@ -83,9 +83,8 @@ export interface UiState {
 
 export interface AuthState {
   session: Session | null;
-  deviceId: string | null;
   username: string | null;
   isAuthenticated: boolean;
-  setSession: (session: Session, deviceId: string, username: string) => void;
+  setSession: (session: Session, username: string) => void;
   clearSession: () => void;
 }

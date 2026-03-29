@@ -1,14 +1,12 @@
-import { useEffect, useState, Component } from "react";
+import { Component } from "react";
 import type { ErrorInfo } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
-import { useNakama } from "@/hooks/useNakama";
 import { useConnectionStatus } from "@/hooks/useConnectionStatus";
 import AuthPage from "@/pages/AuthPage";
 import HomePage from "@/pages/HomePage";
 import GamePage from "@/pages/GamePage";
 import LeaderboardPage from "@/pages/LeaderboardPage";
-import LoadingSpinner from "@/components/LoadingSpinner";
 import ToastContainer from "@/components/ToastContainer";
 import type { ErrorBoundaryProps, ErrorBoundaryState } from "@/types/components";
 
@@ -57,32 +55,15 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 }
 
-function SessionGate({ children }: { children: React.ReactNode }) {
-  const { restore } = useNakama();
-  const [restoring, setRestoring] = useState(true);
-
+function ConnectionGate({ children }: { children: React.ReactNode }) {
   useConnectionStatus();
-
-  useEffect(() => {
-    restore().finally(() => setRestoring(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  if (restoring) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-100 dark:bg-gray-950">
-        <LoadingSpinner />
-      </div>
-    );
-  }
-
   return <>{children}</>;
 }
 
 export default function App() {
   return (
     <BrowserRouter>
-      <SessionGate>
+      <ConnectionGate>
         <ErrorBoundary>
           <Routes>
             <Route path="/auth" element={<AuthPage />} />
@@ -114,7 +95,7 @@ export default function App() {
           </Routes>
         </ErrorBoundary>
         <ToastContainer />
-      </SessionGate>
+      </ConnectionGate>
     </BrowserRouter>
   );
 }
