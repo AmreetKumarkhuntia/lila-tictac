@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: lila-tictac-nakama
+    runtime: docker
+    dockerfilePath: ./nakama/Dockerfile
+    plan: free
+    envVars:
+      - key: PORT
+        value: 7350
+      - key: NAKAMA_DB_HOST
+        sync: false
+      - key: NAKAMA_DB_PORT
+        value: "5432"
+      - key: NAKAMA_DB_USER
+        sync: false
+      - key: NAKAMA_DB_PASSWORD
+        sync: false
+      - key: NAKAMA_DB_NAME
+        value: nakama
