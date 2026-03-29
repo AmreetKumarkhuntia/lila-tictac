@@ -2,38 +2,52 @@
 
 ## Authentication
 
-### Device ID Login
+### Register
 
-```typescript
-// Auto-generate or retrieve device ID from localStorage
-const deviceId = localStorage.getItem("deviceId") || generateUUID();
-localStorage.setItem("deviceId", deviceId);
-
-const session = await client.authenticateDevice(deviceId, {
-  username: username,
+```ts
+const session = await client.authenticateEmail({
+  email: "user@example.com",
+  password: "password123",
+  username: "player1",
   create: true,
 });
 ```
 
+Creates a new account and returns a session. Requires email, password (min 8 chars), and username (3-20 chars, alphanumeric + underscore).
+
+### Login
+
+```ts
+const session = await client.authenticateEmail({
+  email: "user@example.com",
+  password: "password123",
+  create: false,
+});
+```
+
+Authenticates an existing user. Returns a session with auth and refresh tokens.
+
 ### Session Refresh
 
-```typescript
-if (session.isexpired(Date.now() / 1000)) {
-  session = await client.sessionRefresh(session);
-}
+```ts
+const session = await client.sessionRefresh(session);
 ```
+
+Called automatically by `authStore.restoreSession()` when the auth token is expired but the refresh token is still valid.
 
 ### Session Persistence
 
-```typescript
-// Save
-localStorage.setItem("nakamaSession", session.token);
-localStorage.setItem("deviceId", deviceId);
+Sessions are stored in `localStorage` under key `"tictactoeKey"`:
 
-// Restore
-const token = localStorage.getItem("nakamaSession");
-const session = Session.restore(token);
+```ts
+interface StoredAuth {
+  authToken: string;
+  refreshToken: string;
+  username: string;
+}
 ```
+
+On app load, `restoreSession()` reads stored tokens, checks expiry, and refreshes if needed.
 
 ---
 
@@ -41,94 +55,35 @@ const session = Session.restore(token);
 
 ### `create_private_match`
 
-Creates a new authoritative match and returns the match ID.
+Creates an authoritative match and returns the match ID.
 
-**Request:**
-
-```json
-{
-  "mode": "classic"
-}
+```ts
+const result = await client.rpc(session, "create_private_match", {
+  mode: "classic", // or "timed"
+});
+// result.payload = { matchId: "tic-tac-toe.matchId..." }
 ```
 
-| Field  | Type   | Required | Description              |
-| ------ | ------ | -------- | ------------------------ |
-| `mode` | string | Yes      | `"classic"` or `"timed"` |
+| Parameter | Type                   | Default     | Description             |
+| --------- | ---------------------- | ----------- | ----------------------- |
+| `mode`    | `"classic" \| "timed"` | `"classic"` | Game mode for the match |
 
 **Response:**
 
 ```json
-{
-  "matchId": "match-uuid-here"
-}
-```
-
-**Server Implementation:**
-
-```typescript
-function createPrivateMatch(
-  ctx: nkruntime.Context,
-  logger: nkruntime.Logger,
-  nk: nkruntime.Nakama,
-  payload: string,
-): string {
-  const params = JSON.parse(payload);
-  const matchId = nk.matchCreate("tic-tac-toe", { mode: params.mode });
-  return JSON.stringify({ matchId });
-}
+{ "matchId": "tic-tac-toe.<uuid>" }
 ```
 
 ### `submit_score`
 
-Called when a match ends. Updates leaderboard and player stats.
-
-**Request:**
-
-```json
-{
-  "matchId": "match-uuid",
-  "winner": "X",
-  "playerX": "user_id_a",
-  "playerO": "user_id_b",
-  "mode": "classic"
-}
-```
-
-| Field     | Type   | Required | Description                          |
-| --------- | ------ | -------- | ------------------------------------ |
-| `matchId` | string | Yes      | Completed match ID (for idempotency) |
-| `winner`  | string | Yes      | `"X"`, `"O"`, or `"draw"`            |
-| `playerX` | string | Yes      | User ID of player X                  |
-| `playerO` | string | Yes      | User ID of player O                  |
-| `mode`    | string | Yes      | Game mode                            |
-
-**Response:**
-
-```json
-{
-  "success": true
-}
-```
-
-**Scoring:**
-
-- Win: +3 points on leaderboard
-- Draw: +1 point each
-- Loss: +0 points
-
-**Stats Updated (in Nakama Storage):**
-
-- `wins`, `losses`, `draws`, `gamesPlayed`
-- `currentStreak`, `bestStreak`
+> **Note:** This RPC is now a legacy no-op. Scores are auto-submitted server-side by `submitMatchResult()` after every game. The function still exists for backward compatibility and returns `{ success: true, message: "Scores are auto-submitted by the server" }`.
 
 ### `get_player_stats`
 
-Fetches the current player's cumulative stats.
+Returns the calling player's cumulative stats.
 
-**Request:**
-
-```json
-{}
+```ts
+const result = await client.rpc(session, "get_player_stats");
 ```
 
 **Response:**
@@ -136,14 +91,24 @@ Fetches the current player's cumulative stats.
 ```json
 {
   "wins": 5,
-  "losses": 3,
+  "losses": 2,
   "draws": 1,
-  "gamesPlayed": 9,
-  "currentStreak": 2,
+  "gamesPlayed": 8,
+  "currentStreak": 3,
   "bestStreak": 4,
-  "winRate": 55.6
+  "winRate": 62.5
 }
 ```
+
+| Field           | Type   | Description                           |
+| --------------- | ------ | ------------------------------------- |
+| `wins`          | number | Total wins                            |
+| `losses`        | number | Total losses                          |
+| `draws`         | number | Total draws                           |
+| `gamesPlayed`   | number | Total games completed                 |
+| `currentStreak` | number | Current consecutive win streak        |
+| `bestStreak`    | number | All-time best win streak              |
+| `winRate`       | number | Win percentage (rounded to 1 decimal) |
 
 ---
 
@@ -153,123 +118,156 @@ Fetches the current player's cumulative stats.
 
 #### Op Code 1: MOVE
 
-Player makes a move on the board.
+Player attempts to place their symbol at a board position.
 
 ```json
-{
-  "row": 1,
-  "col": 2
-}
+{ "row": 0, "col": 1 }
 ```
 
-| Field | Type   | Required | Description        |
-| ----- | ------ | -------- | ------------------ |
-| `row` | number | Yes      | Row index (0-2)    |
-| `col` | number | Yes      | Column index (0-2) |
+| Field | Type   | Range | Description             |
+| ----- | ------ | ----- | ----------------------- |
+| `row` | number | 0-2   | Row index (0 = top)     |
+| `col` | number | 0-2   | Column index (0 = left) |
 
 ### Server → Client
 
 #### Op Code 10: STATE_UPDATE
 
-Full state broadcast after every valid move or on initial join.
+Broadcast to all players after every move or state change.
 
 ```json
 {
   "board": [
-    ["", "X", ""],
-    ["O", "", ""],
+    ["X", "", ""],
+    ["", "O", ""],
     ["", "", "X"]
   ],
   "currentPlayer": "O",
   "moveCount": 3,
   "status": "playing",
-  "timers": {
-    "X": 22.5,
-    "O": 30.0,
-    "timeLimit": 30
-  }
+  "timers": { "X": 28.5, "O": 30, "timeLimit": 30 },
+  "opponentDisconnected": false
 }
 ```
 
-| Field           | Type          | Description                      |
-| --------------- | ------------- | -------------------------------- |
-| `board`         | `string[][]`  | 3x3 grid of "", "X", "O"         |
-| `currentPlayer` | `string`      | "X" or "O" — whose turn it is    |
-| `moveCount`     | `number`      | Total moves made so far          |
-| `status`        | `string`      | "waiting", "playing", "finished" |
-| `timers`        | `object/null` | Timer state (timed mode only)    |
+| Field                  | Type                                   | Description                                         |
+| ---------------------- | -------------------------------------- | --------------------------------------------------- |
+| `board`                | `string[][]`                           | 3x3 grid. Values: `""`, `"X"`, `"O"`                |
+| `currentPlayer`        | `"X" \| "O"`                           | Whose turn it is                                    |
+| `moveCount`            | number                                 | Total moves made (0-9)                              |
+| `status`               | `"waiting" \| "playing" \| "finished"` | Game phase                                          |
+| `timers`               | `object \| null`                       | Per-player remaining seconds (null in classic mode) |
+| `timers.X`             | number                                 | Player X's remaining time                           |
+| `timers.O`             | number                                 | Player O's remaining time                           |
+| `timers.timeLimit`     | number                                 | Configured time limit (30s)                         |
+| `opponentDisconnected` | `boolean`                              | Whether opponent is currently disconnected          |
 
 #### Op Code 11: GAME_START
 
-Sent when the second player joins and the game begins.
+Sent individually to each player when the game begins (both players have joined). Contains the player's assigned symbol.
 
 ```json
 {
   "players": {
-    "X": { "userId": "abc", "username": "Alice" },
-    "O": { "userId": "def", "username": "Bob" }
+    "X": { "userId": "abc123", "username": "Player1" },
+    "O": { "userId": "def456", "username": "Player2" }
   },
   "mode": "classic",
   "assignedSymbol": "X"
 }
 ```
 
+| Field                     | Type                   | Description                   |
+| ------------------------- | ---------------------- | ----------------------------- |
+| `players`                 | `object`               | Map of symbol to player info  |
+| `players.X` / `players.O` | `object`               | `{ userId, username }`        |
+| `mode`                    | `"classic" \| "timed"` | Game mode                     |
+| `assignedSymbol`          | `"X" \| "O"`           | The receiving player's symbol |
+
 #### Op Code 12: GAME_OVER
 
-Sent when the game ends (win, draw, or timeout).
+Broadcast to all players when the game ends.
 
 ```json
 {
   "winner": "X",
   "board": [
-    ["O", "X", ""],
-    ["O", "X", ""],
-    ["", "X", "O"]
+    ["X", "O", ""],
+    ["", "X", ""],
+    ["", "O", "X"]
   ],
   "winningLine": [
-    [0, 1],
+    [0, 0],
     [1, 1],
-    [2, 1]
+    [2, 2]
   ],
   "reason": "win"
 }
 ```
 
-| Field         | Type         | Description                             |
-| ------------- | ------------ | --------------------------------------- |
-| `winner`      | `string`     | "X", "O", or "draw"                     |
-| `board`       | `string[][]` | Final board state                       |
-| `winningLine` | `array/null` | 3 cell coordinates if win, null if draw |
-| `reason`      | `string`     | "win", "draw", "timeout", "forfeit"     |
+| Field         | Type                                        | Description                                              |
+| ------------- | ------------------------------------------- | -------------------------------------------------------- |
+| `winner`      | `"" \| "X" \| "O" \| "draw"`                | Winner symbol, `"draw"` if tie, `""` if match terminated |
+| `board`       | `string[][]`                                | Final board state                                        |
+| `winningLine` | `[number, number][] \| null`                | Winning cell coordinates, or null for draw/forfeit       |
+| `reason`      | `"win" \| "draw" \| "timeout" \| "forfeit"` | Why the game ended                                       |
 
 #### Op Code 13: ERROR
 
-Sent to a specific player when their move is invalid.
+Sent to a single player when their move is rejected.
 
 ```json
-{
-  "message": "It is not your turn"
-}
+{ "message": "Not your turn" }
 ```
+
+Common error messages:
+
+| Message                        | Cause                                      |
+| ------------------------------ | ------------------------------------------ |
+| `"Game not in progress"`       | Game hasn't started or is already finished |
+| `"Not a player in this match"` | Sender is not recognized as X or O         |
+| `"Not your turn"`              | It's the other player's turn               |
+| `"Invalid row/col"`            | Row or column out of range [0,2]           |
+| `"Cell already occupied"`      | Target cell is not empty                   |
 
 #### Op Code 14: OPPONENT_LEFT
 
-Sent to the remaining player when opponent disconnects.
+Sent to the remaining player when their opponent disconnects.
 
 ```json
-{
-  "winner": "O",
-  "reason": "disconnect"
-}
+{ "winner": "", "reason": "disconnected_temporary" }
 ```
+
+| Field    | Type                       | Description                                 |
+| -------- | -------------------------- | ------------------------------------------- |
+| `winner` | `""`                       | Empty — game is NOT over yet (grace period) |
+| `reason` | `"disconnected_temporary"` | Opponent has 15 seconds to reconnect        |
+
+If the opponent doesn't reconnect within 15 seconds, a separate `GAME_OVER` message is sent with `reason: "forfeit"`.
 
 #### Op Code 15: MATCH_TERMINATED
 
-Sent to all players when the server terminates the match.
+Sent when the server terminates the match (e.g., both players disconnect).
 
 ```json
 {}
 ```
+
+Empty payload. Clients should redirect to the home screen.
+
+#### Op Code 16: OPPONENT_RECONNECTED
+
+Sent to the remaining player when their opponent reconnects within the grace period.
+
+```json
+{ "reconnectedSymbol": "O" }
+```
+
+| Field               | Type         | Description              |
+| ------------------- | ------------ | ------------------------ |
+| `reconnectedSymbol` | `"X" \| "O"` | Which symbol reconnected |
+
+Followed by a `STATE_UPDATE` with the current game state.
 
 ---
 
@@ -277,88 +275,102 @@ Sent to all players when the server terminates the match.
 
 ### Add Matchmaker Ticket
 
-```typescript
-const matchmakerTicket = await socket.addMatchmaker(
-  session,
-  "+properties.mode:classic",
+```ts
+const ticket = await socket.addMatchmaker(
+  "+properties.mode:classic", // query string
   2, // minCount
   2, // maxCount
   { mode: "classic" }, // stringProperties
 );
 ```
 
-### Receive Match
+| Parameter          | Value                                                      | Description                  |
+| ------------------ | ---------------------------------------------------------- | ---------------------------- |
+| `query`            | `"+properties.mode:classic"` or `"+properties.mode:timed"` | Ensures mode-matched pairing |
+| `minCount`         | `2`                                                        | Minimum players per match    |
+| `maxCount`         | `2`                                                        | Maximum players per match    |
+| `stringProperties` | `{ mode: "classic" }`                                      | Mode property for filtering  |
 
-```typescript
-socket.onmatchmakermatched = (matched) => {
-  const matchId = matched.matchId;
-  const opponents = matched.users;
-  // Join the match
+### Matchmaker Matched Event
+
+```ts
+socket.onmatchmakermatched = (matched: MatchmakerMatched) => {
+  // matched contains ticket, token, users
+  // Server creates match via matchmakerMatched callback
+  // Client joins the match
 };
 ```
 
-### Cancel Matchmaker
+### Cancel Matchmaker Ticket
 
-```typescript
-await socket.removeMatchmaker(session, matchmakerTicket.ticket);
+```ts
+await socket.removeMatchmaker(ticket);
 ```
+
+### Server-side: matchmakerMatched Callback
+
+Registered in `InitModule`. When Nakama matches players:
+
+1. Extracts `mode` from matched users' string properties
+2. Creates a new `"tic-tac-toe"` match with that mode
+3. Returns the `matchId` — Nakama routes players to the match automatically
 
 ---
 
 ## Leaderboard API
 
-### List Leaderboard Records
+### Leaderboard Configuration
 
-```typescript
-const records = await client.listLeaderboardRecords(
-  session,
-  "tic-tac-toe-wins",
-  null, // ownerIds (null = all)
-  50, // limit
-  null, // cursor
-  null, // expiry
-);
-```
+- **ID:** `tic-tac-toe-wins`
+- **Sort:** Descending (highest score first)
+- **Operator:** Incremental (scores accumulate across matches)
+- **Created:** On module init (idempotent)
 
-**Record Structure:**
+### Scoring
+
+| Outcome | Points |
+| ------- | ------ |
+| Win     | +3     |
+| Draw    | +1     |
+| Loss    | +0     |
+
+### Leaderboard Record Structure
 
 ```json
 {
-  "ownerId": "user_id",
-  "username": "Alice",
-  "score": 24,
-  "numScore": 8,
+  "ownerId": "user_uuid",
+  "username": "player1",
+  "score": 15,
+  "rank": 1,
   "metadata": {
-    "wins": 8,
-    "gamesPlayed": 15,
-    "winRate": 53.3
+    "wins": 5,
+    "gamesPlayed": 8,
+    "winRate": 62.5
   }
 }
 ```
 
-### Submit Score (via RPC)
+### Fetch Global Leaderboard
 
-Handled by `submit_score` RPC (see above). Internally calls:
-
-```typescript
-nk.leaderboardRecordWrite(
+```ts
+const records = await client.listLeaderboardRecords(
+  session,
   "tic-tac-toe-wins",
-  userId,
-  username,
-  score,
-  0,
-  metadata,
+  undefined, // ownerIds
+  50, // limit
+  undefined, // cursor
+  undefined, // expiry
 );
 ```
 
-### Get Player's Rank
+### Fetch Records Around Current Player
 
-```typescript
+```ts
 const records = await client.listLeaderboardRecordsAroundOwner(
   session,
   "tic-tac-toe-wins",
-  userId,
-  5, // records above and below
+  session.userId,
+  10, // limit (5 above + 5 below)
 );
 ```
 
@@ -366,89 +378,61 @@ const records = await client.listLeaderboardRecordsAroundOwner(
 
 ## Storage API
 
-### Player Stats Object
+Player stats are stored in Nakama Storage. Written exclusively by the server.
 
-**Collection:** `player_stats`
-**Key:** `summary`
-**Owner:** (player's user ID)
+### Storage Path
+
+| Field      | Value            |
+| ---------- | ---------------- |
+| Collection | `"player_stats"` |
+| Key        | `"summary"`      |
+| User       | Per-player       |
+
+### Permissions
+
+| Permission | Value             |
+| ---------- | ----------------- |
+| Read       | `2` (public)      |
+| Write      | `0` (server-only) |
+
+### Stats Object
 
 ```json
 {
   "wins": 5,
-  "losses": 3,
+  "losses": 2,
   "draws": 1,
-  "gamesPlayed": 9,
-  "currentStreak": 2,
+  "gamesPlayed": 8,
+  "currentStreak": 3,
   "bestStreak": 4,
-  "lastMatchAt": 1700000000
+  "lastMatchAt": 1711843200
 }
-```
-
-### Read Stats (via RPC `get_player_stats`)
-
-```typescript
-const objects = nk.storageRead([
-  {
-    collection: "player_stats",
-    key: "summary",
-    userId: userId,
-  },
-]);
-```
-
-### Write Stats (internal, called from `submit_score`)
-
-```typescript
-nk.storageWrite([
-  {
-    collection: "player_stats",
-    key: "summary",
-    userId: userId,
-    value: JSON.stringify(stats),
-  },
-]);
 ```
 
 ---
 
 ## Nakama Server Configuration
 
-### Leaderboard Setup (on server init)
+Configured in `nakama/local.yml`:
 
-```typescript
-function initMatch(
-  ctx: nkruntime.Context,
-  logger: nkruntime.Logger,
-  nk: nkruntime.Nakama,
-) {
-  // Create leaderboard if it doesn't exist
-  try {
-    nk.leaderboardCreate("tic-tac-toe-wins", true, "desc", "incr", 0, "");
-  } catch (e) {
-    // Already exists, ignore
-  }
-}
+```yaml
+logger:
+  level: "INFO"
+runtime:
+  js_entrypoint: "build/index.js"
+session:
+  token_expiry_sec: 7200
+socket:
+  max_message_size_bytes: 4096
+  max_request_size_bytes: 131072
 ```
 
-### RPC Registration
+### Module Registration (`InitModule`)
 
-```typescript
-function initModule(
-  ctx: nkruntime.Context,
-  logger: nkruntime.Logger,
-  nk: nkruntime.Nakama,
-) {
-  nk.registerRpc("create_private_match", createPrivateMatch);
-  nk.registerRpc("submit_score", submitScore);
-  nk.registerRpc("get_player_stats", getPlayerStats);
-  nk.registerMatch("tic-tac-toe", {
-    matchInit,
-    matchJoinAttempt,
-    matchJoin,
-    matchLoop,
-    matchLeave,
-    matchTerminate,
-  });
-  nk.registerInit(initMatch);
-}
-```
+On startup, the server:
+
+1. **Creates leaderboard** `tic-tac-toe-wins` (idempotent)
+2. **Registers RPCs:** `create_private_match`, `submit_score`, `get_player_stats`
+3. **Registers match handler** `"tic-tac-toe"` with all 7 lifecycle hooks:
+   - `matchInit`, `matchJoinAttempt`, `matchJoin`, `matchLoop`, `matchLeave`, `matchTerminate`, `matchSignal`
+4. **Registers matchmaker callback** `matchmakerMatched`

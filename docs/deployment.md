@@ -2,120 +2,176 @@
 
 ## Overview
 
-| Component     | Service                                     | Purpose             |
-| ------------- | ------------------------------------------- | ------------------- |
-| Nakama Server | Cloud VM (DigitalOcean/AWS EC2/GCP Compute) | Game server         |
-| PostgreSQL    | Same VM (Docker) or managed DB              | Nakama persistence  |
-| Frontend      | Vercel / Netlify / Cloudflare Pages         | Static site hosting |
+| Component     | Recommended Platform                          | Alternative                       |
+| ------------- | --------------------------------------------- | --------------------------------- |
+| Nakama Server | Railway, Fly.io, or VM (DigitalOcean/AWS/GCP) | Render.com                        |
+| PostgreSQL    | Neon, or same VM as Nakama                    | Managed DB on any provider        |
+| Frontend      | Vercel                                        | Netlify, Cloudflare Pages, Docker |
 
-## Prerequisites
+Multiple deployment options are provided. Choose one based on your needs:
 
-- Cloud provider account with billing enabled
-- Domain name (optional but recommended for SSL)
-- SSH key pair for VM access
-- Docker and Docker Compose installed on VM
-- Node.js >= 18 (to build Nakama modules locally before uploading)
+- **Railway + Neon + Vercel** — Easiest setup, good for demos
+- **Fly.io** — Full WebSocket support (port 7351), auto-scaling, production-ready
+- **VM + Caddy** — Full control, best for production workloads
+- **Docker Compose** — Self-hosted, simplest setup
 
----
+## Option A: Railway + Neon + Vercel
 
-## Step 1: Provision Cloud VM
+### 1. Set up the database (Neon)
 
-### Recommended Specs
+Run `nakama/setup-db.sql` in your Neon SQL editor (replace `neondb_owner` with your actual Neon user and `CHANGE_ME` with a secure password):
 
-| Resource | Minimum          | Recommended      |
-| -------- | ---------------- | ---------------- |
-| CPU      | 1 vCPU           | 2 vCPU           |
-| RAM      | 2 GB             | 4 GB             |
-| Storage  | 25 GB SSD        | 50 GB SSD        |
-| OS       | Ubuntu 22.04 LTS | Ubuntu 22.04 LTS |
-
-### Provider-Specific Setup
-
-**DigitalOcean:**
-
-1. Create Droplet → Ubuntu 22.04 → Basic → $12/mo (2GB)
-2. Add SSH key during creation
-3. Note the public IP
-
-**AWS EC2:**
-
-1. Launch Instance → Ubuntu 22.04 LTS → t3.small
-2. Configure security group (see firewall rules below)
-3. Create and attach Elastic IP
-4. Use SSH key pair for access
-
-**GCP Compute Engine:**
-
-1. Create VM → Ubuntu 22.04 LTS → e2-small
-2. Configure firewall rules (see below)
-3. Note external IP
-
-### Firewall Rules
-
-| Port | Protocol | Source    | Purpose                  |
-| ---- | -------- | --------- | ------------------------ |
-| 22   | TCP      | Your IP   | SSH access               |
-| 80   | TCP      | 0.0.0.0/0 | HTTP (redirect to HTTPS) |
-| 443  | TCP      | 0.0.0.0/0 | HTTPS (reverse proxy)    |
-
-> **Note:** Nakama ports 7350/7351 should NOT be exposed directly in production. Route them through the reverse proxy.
-
----
-
-## Step 2: Install Docker on VM
-
-```bash
-ssh root@<vm-ip>
-
-# Update system
-apt update && apt upgrade -y
-
-# Install Docker
-curl -fsSL https://get.docker.com | sh
-
-# Install Docker Compose (if not included)
-apt install -y docker-compose-plugin
-
-# Verify
-docker --version
-docker compose version
+```sql
+CREATE USER nakama WITH PASSWORD 'your_password';
+GRANT nakama TO your_neon_user;
+CREATE DATABASE nakama OWNER nakama;
+\c nakama
+GRANT ALL ON SCHEMA public TO nakama;
 ```
 
----
+### 2. Deploy Nakama to Railway
 
-## Step 3: Build Nakama Modules
+1. Create a new **Web Service** on Railway, connect your GitHub repo
+2. Set **Docker** runtime with `nakama/Dockerfile`
+3. Set **Custom Start Command** to `/nakama/entrypoint.sh`
+4. Set **Target Port** to `7350`
+5. Add environment variables:
 
-Nakama requires a **single bundled ES5 JavaScript file**. Build it locally before deploying:
+| Variable             | Value                      |
+| -------------------- | -------------------------- |
+| `NAKAMA_DB_HOST`     | `your-neon-host.neon.tech` |
+| `NAKAMA_DB_PORT`     | `5432`                     |
+| `NAKAMA_DB_USER`     | `nakama`                   |
+| `NAKAMA_DB_PASSWORD` | your password              |
+| `NAKAMA_DB_NAME`     | `nakama`                   |
+
+> **Note:** Railway free tier only exposes a single HTTP port (7350). WebSocket realtime connections (port 7351) are not available on the free plan. For full realtime multiplayer, upgrade to a paid Railway plan or use Fly.io.
+
+### 3. Deploy frontend to Vercel
+
+1. Connect your GitHub repo to Vercel (auto-detects Vite)
+2. Set environment variables in **Settings → Environment Variables**:
+
+| Variable                 | Value                             |
+| ------------------------ | --------------------------------- |
+| `VITE_NAKAMA_HOST`       | `your-railway-app.up.railway.app` |
+| `VITE_NAKAMA_PORT`       | `443`                             |
+| `VITE_NAKAMA_SSL`        | `true`                            |
+| `VITE_NAKAMA_SERVER_KEY` | `defaultkey`                      |
+| `VITE_TIMER_SECONDS`     | `30`                              |
+
+3. Redeploy after setting env vars
+
+## Option B: Fly.io
+
+The `fly.toml` config is pre-configured for the Nakama backend.
+
+### Deploy
 
 ```bash
-# On your local machine
+# Install Fly CLI
+curl -L https://fly.io/install.sh | sh
+
+# Launch app (uses nakama/Dockerfile from fly.toml)
+fly launch
+
+# Set database secrets
+fly secrets set \
+  NAKAMA_DB_HOST=your-db-host \
+  NAKAMA_DB_PORT=5432 \
+  NAKAMA_DB_USER=nakama \
+  NAKAMA_DB_PASSWORD=your_password \
+  NAKAMA_DB_NAME=nakama
+
+# Deploy
+fly deploy
+```
+
+### Features
+
+- Exposes both HTTP (7350) and TCP (7351) for full WebSocket support
+- Auto-scales to zero machines when idle (`min_machines_running = 0`)
+- Forced HTTPS on port 7350
+- Region: San Jose (`sjc`) — change in `fly.toml` if needed
+- Immediate deploy strategy (no rolling update)
+
+### Frontend Deployment
+
+Deploy the frontend to Vercel, Netlify, or Cloudflare Pages (see Option A step 3 for env vars). Set `VITE_NAKAMA_HOST` to your Fly.io app URL (`lila-tictac-nakama.fly.dev`).
+
+## Option C: Render.com
+
+The `render.yaml` blueprint is pre-configured.
+
+### Deploy
+
+1. Connect your GitHub repo to Render
+2. Render auto-detects `render.yaml` — creates the service
+3. Set database credentials in the Render dashboard (the `sync: false` variables):
+   - `NAKAMA_DB_HOST`
+   - `NAKAMA_DB_USER`
+   - `NAKAMA_DB_PASSWORD`
+
+### Configuration
+
+| Setting | Value                        |
+| ------- | ---------------------------- |
+| Runtime | Docker (`nakama/Dockerfile`) |
+| Plan    | Free                         |
+| Port    | 7350                         |
+| DB Name | `nakama`                     |
+| DB Port | `5432`                       |
+
+## Option D: VM with Caddy Reverse Proxy
+
+### Step 1: Provision VM
+
+Recommended specs:
+
+| Resource | Minimum      | Recommended  |
+| -------- | ------------ | ------------ |
+| CPU      | 1 vCPU       | 2 vCPU       |
+| RAM      | 2 GB         | 4 GB         |
+| Storage  | 25 GB SSD    | 50 GB SSD    |
+| OS       | Ubuntu 22.04 | Ubuntu 22.04 |
+
+**Firewall rules — only expose:**
+
+| Port | Source  | Purpose |
+| ---- | ------- | ------- |
+| 22   | Your IP | SSH     |
+| 80   | All     | HTTP    |
+| 443  | All     | HTTPS   |
+
+Do NOT directly expose Nakama ports (7349, 7350, 7351).
+
+### Step 2: Install Docker
+
+```bash
+# Update and install Docker
+sudo apt update && sudo apt upgrade -y
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER
+```
+
+### Step 3: Build Nakama Modules
+
+```bash
 npm run nakama:build
 ```
 
-This compiles `nakama/modules/*.ts` → `nakama/build/index.js`.
+Build locally before deploying, or build on the VM if Node.js is installed.
 
----
+### Step 4: Deploy Nakama
 
-## Step 4: Deploy Nakama Server
-
-### 4.1 Create Project Directory
+Create `/opt/nakama` and upload:
 
 ```bash
-ssh root@<vm-ip>
-mkdir -p /opt/nakama/build
+sudo mkdir -p /opt/nakama
+# Upload: nakama/build/, nakama/local.yml, docker-compose.yml (production version)
 ```
 
-### 4.2 Upload Files
-
-```bash
-# From local machine — upload the compiled module and config
-scp nakama/build/index.js root@<vm-ip>:/opt/nakama/build/
-scp nakama/local.yml root@<vm-ip>:/opt/nakama/local.yml
-```
-
-### 4.3 Production docker-compose.yml
-
-Create `/opt/nakama/docker-compose.yml` on the VM:
+Production `docker-compose.yml`:
 
 ```yaml
 services:
@@ -124,27 +180,25 @@ services:
     environment:
       POSTGRES_DB: nakama
       POSTGRES_USER: nakama
-      POSTGRES_PASSWORD: <CHANGE_ME_STRONG_PASSWORD>
+      POSTGRES_PASSWORD: your_secure_password
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-    restart: always
+      - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "nakama"]
-      interval: 10s
-      timeout: 5s
+      test: ["CMD-SHELL", "pg_isready -U nakama -d nakama"]
+      interval: 3s
       retries: 5
 
   nakama:
     image: registry.heroiclabs.com/heroiclabs/nakama:3.38.0
-    restart: always
+    restart: unless-stopped
     entrypoint:
       - "/bin/sh"
       - "-ecx"
       - >
-        /nakama/nakama migrate up --database.address "nakama:<POSTGRES_PASSWORD>@postgres:5432/nakama" &&
+        /nakama/nakama migrate up --database.address nakama:your_secure_password@postgres:5432/nakama &&
         exec /nakama/nakama
         --name nakama1
-        --database.address "nakama:<POSTGRES_PASSWORD>@postgres:5432/nakama"
+        --database.address nakama:your_secure_password@postgres:5432/nakama
         --config /nakama/data/local.yml
     depends_on:
       postgres:
@@ -153,215 +207,183 @@ services:
       - ./build:/nakama/data/modules/build
       - ./local.yml:/nakama/data/local.yml:ro
     ports:
-      - "7350:7350"
-      - "7351:7351"
-    healthcheck:
-      test: ["CMD", "/nakama/nakama", "healthcheck"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - "127.0.0.1:7350:7350"
+      - "127.0.0.1:7351:7351"
 
 volumes:
-  postgres_data:
+  postgres-data:
 ```
 
-### 4.4 Production local.yml
+> **Important:** Bind Nakama ports to `127.0.0.1` only — Caddy will proxy externally.
 
-Create `/opt/nakama/local.yml` on the VM (or edit the uploaded copy):
-
-```yaml
-logger:
-  level: "info"
-
-runtime:
-  js_entrypoint: "build/index.js"
-  http_key: "<CHANGE_ME_HTTP_KEY>"
-
-console:
-  username: "admin"
-  password: "<CHANGE_ME_CONSOLE_PASSWORD>"
-
-session:
-  token_expiry_sec: 86400
-  refresh_token_expiry_sec: 604800
-
-socket:
-  max_message_size_bytes: 4096
-  max_request_size_bytes: 131072
-```
-
-### 4.5 Start Nakama
+Start:
 
 ```bash
-cd /opt/nakama
-docker compose up -d
-
-# Verify
-docker compose logs -f nakama
-curl http://localhost:7350/
+cd /opt/nakama && docker compose up -d
 ```
 
-Look for logs confirming module loading:
-
-```
-Found runtime modules  count=1  modules=[build/index.js]
-```
-
----
-
-## Step 5: Configure Reverse Proxy (Caddy)
+### Step 5: Reverse Proxy (Caddy)
 
 Caddy provides automatic SSL via Let's Encrypt.
 
-### 5.1 Install Caddy
-
 ```bash
-apt install -y debian-keyring debian-archive-keyring apt-transport-https
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
-apt update
-apt install caddy
+sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+sudo apt update
+sudo apt install caddy
 ```
 
-### 5.2 Caddyfile
-
-Replace `api.yourdomain.com` with your domain. Point your domain's DNS A record to the VM IP.
+`/etc/caddy/Caddyfile`:
 
 ```
 api.yourdomain.com {
     reverse_proxy localhost:7350
+
+    handle /ws/* {
+        reverse_proxy localhost:7351
+    }
 }
 ```
 
-### 5.3 Restart Caddy
-
 ```bash
-systemctl restart caddy
-
-# Verify SSL
-curl https://api.yourdomain.com/
+sudo systemctl restart caddy
 ```
 
-Caddy automatically provisions and renews SSL certificates.
+### Step 6: Deploy Frontend
 
----
-
-## Step 6: Deploy Frontend
-
-### 6.1 Build
+Build locally:
 
 ```bash
-# Local machine
+VITE_NAKAMA_HOST=api.yourdomain.com \
+VITE_NAKAMA_PORT=443 \
+VITE_NAKAMA_SSL=true \
 npm run build
 ```
 
-Produces `dist/` directory with static files.
+Deploy `dist/` to Vercel, Netlify, or Cloudflare Pages.
 
-### 6.2 Configure Environment
+## Option E: Docker Compose (Full Stack)
 
-Set one of these in your hosting provider's dashboard:
-
-**Option A — Single URL (recommended):**
-
-- `VITE_NAKAMA_URL` = `https://api.yourdomain.com`
-
-**Option B — Individual vars:**
-
-- `VITE_NAKAMA_HOST` = `api.yourdomain.com`
-- `VITE_NAKAMA_PORT` = `443`
-- `VITE_NAKAMA_SSL` = `true`
-- `VITE_NAKAMA_SERVER_KEY` = your server key
-
-Both options also need:
-
-- `VITE_TIMER_SECONDS` = `30`
-
-> **Note:** `VITE_NAKAMA_URL` takes precedence over the individual vars when set.
-
-### 6.3 Option A: Vercel (Recommended)
+For self-hosted or local network deployment:
 
 ```bash
-npm i -g vercel
-vercel --prod
+docker compose up -d
 ```
 
-Set environment variables in Vercel dashboard.
+This starts three services:
 
-### 6.4 Option B: Netlify
+| Service    | Port             | Description      |
+| ---------- | ---------------- | ---------------- |
+| PostgreSQL | 5432 (internal)  | Database         |
+| Nakama     | 7349, 7350, 7351 | Game server      |
+| Frontend   | 3000             | Nginx-served SPA |
 
-```bash
-npm i -g netlify-cli
-netlify deploy --prod --dir=dist
+Frontend is built from `Dockerfile.frontend` and served by Nginx with SPA fallback and gzip compression.
+
+## CI/CD Pipeline
+
+### GitHub Actions Workflows
+
+#### CI (`ci.yaml`)
+
+Triggers on every push to `master` and every PR targeting `master`.
+
+| Step                  | Command                              | Description                 |
+| --------------------- | ------------------------------------ | --------------------------- |
+| Install frontend deps | `npm ci`                             | Clean install from lockfile |
+| Install nakama deps   | `npm --prefix nakama install`        | Server module dependencies  |
+| ESLint                | `npm run lint`                       | Lint `src/`                 |
+| Frontend typecheck    | `npm run typecheck`                  | `tsc --noEmit`              |
+| Nakama typecheck      | `npm --prefix nakama run type-check` | Server TypeScript check     |
+| Prettier check        | `npm run format:check`               | Verify formatting           |
+
+#### Release (`release.yaml`)
+
+Triggers on every push to `master`. Builds and pushes Docker images to GitHub Container Registry (GHCR).
+
+| Image                                  | Tags                    |
+| -------------------------------------- | ----------------------- |
+| `ghcr.io/<owner>/lila-tictac/frontend` | `latest`, `<short-sha>` |
+| `ghcr.io/<owner>/lila-tictac/nakama`   | `latest`, `<short-sha>` |
+
+Built from `Dockerfile.frontend` and `nakama/Dockerfile` respectively.
+
+### Pre-commit Hooks (Husky + lint-staged)
+
+Every `git commit` runs on staged files:
+
+- **`src/**/\*.{ts,tsx}`\*\*: ESLint fix → Prettier write → TypeScript typecheck
+- **`nakama/**/\*.ts`\*\*: Prettier write → TypeScript typecheck
+- **Config/doc files**: Prettier write
+
+Commits are blocked if any check fails.
+
+### Deployment Flow
+
+```
+git push origin master
+       │
+       ├── CI workflow: lint + typecheck
+       │
+       └── Release workflow: build + push Docker images to GHCR
+              │
+              └── Manual: pull images on VM or trigger platform deploy
 ```
 
-Set environment variables in Netlify dashboard.
+Images are pushed to GHCR but deployment to Railway/Fly.io/Render is manual or via platform-native auto-deploy hooks.
 
-### 6.5 Option C: Cloudflare Pages
+## Verification Checklist
 
-1. Connect GitHub repo to Cloudflare Pages
-2. Build command: `npm run build`
-3. Build output: `dist`
-4. Set environment variables in Cloudflare Pages settings
+After deploying, verify:
 
----
-
-## Step 7: Verification Checklist
-
-- [ ] `https://<frontend-url>` loads the app
-- [ ] Player can enter username and authenticate
-- [ ] Two players can find each other via Quick Play
-- [ ] Game plays correctly with real-time state sync
-- [ ] Timer mode works (countdown visible, auto-forfeit on timeout)
-- [ ] Leaderboard updates after game ends
-- [ ] Nakama console accessible at `https://api.yourdomain.com:7351` (or via Caddy)
-- [ ] SSL certificates valid (no browser warnings)
-- [ ] WebSocket connections work (check browser DevTools → Network → WS)
-
----
+1. Nakama healthcheck: `curl https://your-api-host/` returns `{"name":"nakama","version":"3.38.0"}`
+2. Frontend loads and shows the login page
+3. Can register a new account
+4. Two players can find each other via Quick Play
+5. Moves appear in real-time on both screens
+6. Leaderboard updates after a game
+7. Timed mode countdown works
+8. Disconnect/reconnect works within 15s grace period
+9. SSL certificate is valid (Caddy auto-renews)
 
 ## Environment Variables Summary
 
-### Frontend (`.env` / hosting dashboard)
+### Frontend (.env)
 
-| Variable                 | Local        | Production                   |
-| ------------------------ | ------------ | ---------------------------- |
-| `VITE_NAKAMA_URL`        | _(unset)_    | `https://api.yourdomain.com` |
-| `VITE_NAKAMA_HOST`       | `127.0.0.1`  | _(use URL instead)_          |
-| `VITE_NAKAMA_PORT`       | `7350`       | _(use URL instead)_          |
-| `VITE_NAKAMA_SSL`        | `false`      | _(use URL instead)_          |
-| `VITE_NAKAMA_SERVER_KEY` | `defaultkey` | your server key              |
-| `VITE_TIMER_SECONDS`     | `30`         | `30`                         |
+| Variable                 | Local Dev    | Production           |
+| ------------------------ | ------------ | -------------------- |
+| `VITE_NAKAMA_HOST`       | `127.0.0.1`  | `api.yourdomain.com` |
+| `VITE_NAKAMA_PORT`       | `7350`       | `443`                |
+| `VITE_NAKAMA_SSL`        | `false`      | `true`               |
+| `VITE_NAKAMA_SERVER_KEY` | `defaultkey` | `defaultkey`         |
+| `VITE_TIMER_SECONDS`     | `30`         | `30`                 |
 
-### Server (local.yml)
+### Backend (Nakama)
 
-| Setting              | Local                | Production             |
-| -------------------- | -------------------- | ---------------------- |
-| Console password     | `password` (default) | Strong unique password |
-| Session token expiry | `7200`               | `86400`                |
-| Runtime HTTP key     | _(default)_          | Strong unique key      |
-| Logger level         | `DEBUG`              | `info`                 |
-| DB password          | `nakama`             | Strong unique password |
-
----
+| Variable             | Local Dev (Docker)     | Production           |
+| -------------------- | ---------------------- | -------------------- |
+| `NAKAMA_DB_HOST`     | `postgres` (container) | `your-db-host`       |
+| `NAKAMA_DB_PORT`     | `5432`                 | `5432`               |
+| `NAKAMA_DB_USER`     | `nakama`               | `nakama`             |
+| `NAKAMA_DB_PASSWORD` | `nakama`               | your secure password |
+| `NAKAMA_DB_NAME`     | `nakama`               | `nakama`             |
 
 ## Maintenance
 
 ### View Logs
 
 ```bash
-docker compose logs -f nakama --tail=100
+docker compose logs -f nakama          # Nakama server logs
+docker compose logs -f postgres        # Database logs
+docker compose logs -f frontend        # Nginx access/error logs
 ```
 
 ### Update Nakama Modules
 
 ```bash
-# On local machine: edit nakama/modules/*.ts, then:
-npm run nakama:build
-scp nakama/build/index.js root@<vm-ip>:/opt/nakama/build/
-
-# On VM:
-cd /opt/nakama
-docker compose restart nakama
+npm run nakama:build                   # Rebuild TypeScript
+docker compose restart nakama          # Restart with new modules
 ```
 
 ### Backup Database
@@ -378,23 +400,30 @@ cat backup.sql | docker compose exec -T postgres psql -U nakama nakama
 
 ### Update Nakama Version
 
-```bash
-cd /opt/nakama
-# Edit docker-compose.yml with new image tag
-docker compose pull nakama
-docker compose up -d
+Edit the image tag in `docker-compose.yml`:
+
+```yaml
+image: registry.heroiclabs.com/heroiclabs/nakama:3.38.0
+# Change to desired version
 ```
 
-### Full Reset (deletes all data)
+Then:
 
 ```bash
-cd /opt/nakama
-docker compose down -v
+docker compose pull nakama
 docker compose up -d
 ```
 
 ### Monitor Resources
 
 ```bash
-docker stats
+docker stats                            # CPU/Memory per container
+docker compose ps                       # Container status
+```
+
+### Full Reset
+
+```bash
+docker compose down -v                  # Stop and remove volumes
+docker compose up -d                    # Fresh start (re-runs migrations)
 ```

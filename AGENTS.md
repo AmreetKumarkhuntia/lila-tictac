@@ -41,7 +41,7 @@ docs(readme): add advanced examples section
 ### Project Context
 
 - **What:** Multiplayer Tic-Tac-Toe with server-authoritative Nakama backend
-- **Frontend:** React 18 + TypeScript + Vite + Tailwind CSS + Zustand
+- **Frontend:** React 19 + TypeScript + Vite + Tailwind CSS 4 + Zustand 5
 - **Backend:** Nakama 3.x (Docker) + PostgreSQL
 - **Docs:** All planning docs in `docs/` — start with `docs/plan.md`
 - **Phase order:** Follow the phase table in `docs/plan.md`
