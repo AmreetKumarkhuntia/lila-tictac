@@ -2,13 +2,13 @@
 
 ## Prerequisites
 
-| Tool | Version | Purpose |
-|------|---------|---------|
-| Node.js | >= 18.x | Frontend build and dev server |
-| npm | >= 9.x | Package manager |
+| Tool            | Version          | Purpose                                |
+| --------------- | ---------------- | -------------------------------------- |
+| Node.js         | >= 18.x          | Frontend build and dev server          |
+| npm             | >= 9.x           | Package manager                        |
 | Docker / Podman | >= 24.x / >= 4.x | Running Nakama + PostgreSQL containers |
-| Docker Compose | >= 2.20.x | Orchestrating multi-container setup |
-| Git | >= 2.x | Version control |
+| Docker Compose  | >= 2.20.x        | Orchestrating multi-container setup    |
+| Git             | >= 2.x           | Version control                        |
 
 > **Podman users:** alias `docker-compose` to `podman-compose` or use `podman compose`. All commands below use `docker-compose`.
 
@@ -118,14 +118,14 @@ VITE_NAKAMA_SERVER_KEY=defaultkey
 VITE_TIMER_SECONDS=30
 ```
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `VITE_NAKAMA_HOST` | `127.0.0.1` | Nakama server host |
-| `VITE_NAKAMA_PORT` | `7350` | Nakama HTTP API port |
-| `VITE_NAKAMA_SSL` | `false` | Use HTTPS/WSS |
-| `VITE_NAKAMA_SERVER_KEY` | `defaultkey` | Nakama server key |
-| `VITE_NAKAMA_URL` | _(unset)_ | Full tunnel URL — overrides HOST/PORT/SSL when set |
-| `VITE_TIMER_SECONDS` | `30` | Seconds per move in timed mode |
+| Variable                 | Default      | Description                                        |
+| ------------------------ | ------------ | -------------------------------------------------- |
+| `VITE_NAKAMA_HOST`       | `127.0.0.1`  | Nakama server host                                 |
+| `VITE_NAKAMA_PORT`       | `7350`       | Nakama HTTP API port                               |
+| `VITE_NAKAMA_SSL`        | `false`      | Use HTTPS/WSS                                      |
+| `VITE_NAKAMA_SERVER_KEY` | `defaultkey` | Nakama server key                                  |
+| `VITE_NAKAMA_URL`        | _(unset)_    | Full tunnel URL — overrides HOST/PORT/SSL when set |
+| `VITE_TIMER_SECONDS`     | `30`         | Seconds per move in timed mode                     |
 
 ## Step 3: Build Nakama Server Modules
 
@@ -146,6 +146,7 @@ npm run backend:up
 ```
 
 This starts:
+
 - **PostgreSQL** (internal, port 5432)
 - **Nakama** on ports 7349 (gRPC), 7350 (HTTP API + WebSocket), 7351 (Console)
 
@@ -158,8 +159,9 @@ curl http://127.0.0.1:7350/
 ```
 
 Expected response:
+
 ```json
-{"name":"nakama","version":"3.38.0"}
+{ "name": "nakama", "version": "3.38.0" }
 ```
 
 ### Nakama Developer Console
@@ -210,48 +212,53 @@ To test from multiple devices on a network:
 
 ## npm Scripts Reference
 
-| Command | Purpose |
-|---------|---------|
-| `npm run setup` | First-time setup: copy `.env`, install all deps |
-| `npm run start` | Build Nakama modules + start containers + Vite dev server |
-| `npm run dev` | Start Vite dev server with HMR |
-| `npm run build` | Production build to `dist/` |
-| `npm run preview` | Preview production build locally |
-| `npm run lint` | Run ESLint on `src/` |
-| `npm run typecheck` | Run TypeScript type checking |
-| `npm run nakama:install` | Install Nakama backend dependencies |
-| `npm run nakama:build` | Compile Nakama TypeScript modules → `nakama/build/index.js` |
-| `npm run nakama:console` | Open Nakama developer console in browser |
-| `npm run backend:up` | Start Nakama + PostgreSQL containers |
-| `npm run backend:down` | Stop all containers |
-| `npm run backend:reset` | Stop containers and delete volumes (full reset) |
-| `npm run backend:restart` | Restart Nakama container (after rebuilding modules) |
-| `npm run backend:logs` | Tail Nakama server logs |
-| `npm run backend:ps` | Show container status |
+| Command                   | Purpose                                                     |
+| ------------------------- | ----------------------------------------------------------- |
+| `npm run setup`           | First-time setup: copy `.env`, install all deps             |
+| `npm run start`           | Build Nakama modules + start containers + Vite dev server   |
+| `npm run dev`             | Start Vite dev server with HMR                              |
+| `npm run build`           | Production build to `dist/`                                 |
+| `npm run preview`         | Preview production build locally                            |
+| `npm run lint`            | Run ESLint on `src/`                                        |
+| `npm run typecheck`       | Run TypeScript type checking                                |
+| `npm run nakama:install`  | Install Nakama backend dependencies                         |
+| `npm run nakama:build`    | Compile Nakama TypeScript modules → `nakama/build/index.js` |
+| `npm run nakama:console`  | Open Nakama developer console in browser                    |
+| `npm run backend:up`      | Start Nakama + PostgreSQL containers                        |
+| `npm run backend:down`    | Stop all containers                                         |
+| `npm run backend:reset`   | Stop containers and delete volumes (full reset)             |
+| `npm run backend:restart` | Restart Nakama container (after rebuilding modules)         |
+| `npm run backend:logs`    | Tail Nakama server logs                                     |
+| `npm run backend:ps`      | Show container status                                       |
 
 ## Troubleshooting
 
 ### Nakama won't start
+
 - Ensure Docker/Podman is running: `docker info`
 - Check port conflicts: `lsof -i :7350` and `lsof -i :5432`
 - View logs: `npm run backend:logs`
 
 ### "Found runtime modules count=0"
+
 - You forgot to build: run `npm run nakama:build`
 - Verify `nakama/build/index.js` exists
 - Verify `nakama/local.yml` has `js_entrypoint: "build/index.js"`
 
 ### Frontend can't connect to Nakama
+
 - Verify Nakama is running: `curl http://127.0.0.1:7350/`
 - Check `.env` variables match your Nakama config
 - If using `VITE_NAKAMA_URL`, ensure it points to a reachable tunnel
 - Restart Vite after changing `.env`: `npm run dev`
 
 ### Database connection errors
+
 - PostgreSQL needs a few seconds to initialize on first run
 - If persistent errors: `npm run backend:reset` (deletes data) then `npm run backend:up`
 
 ### Nakama module changes not reflected
+
 1. Rebuild: `npm run nakama:build`
 2. Restart: `npm run backend:restart`
 3. Check logs for errors: `npm run backend:logs`

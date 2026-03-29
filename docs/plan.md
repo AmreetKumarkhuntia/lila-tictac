@@ -1,16 +1,16 @@
 ## Implementation Plan
 
-| Phase | Description | Doc |
-|-------|-------------|-----|
-| 1 | Project Scaffolding | [setup.md](./setup.md) |
-| 2 | Authentication & Player Identity | [api.md](./api.md) |
-| 3 | Server-Authoritative Game Logic | [game-logic.md](./game-logic.md) |
-| 4 | Matchmaking System | [matchmaking.md](./matchmaking.md) |
-| 5 | Frontend Game UI | [frontend.md](./frontend.md) |
-| 6 | Leaderboard System (Bonus) | [api.md](./api.md) |
-| 7 | Timer-Based Mode (Bonus) | [game-logic.md](./game-logic.md) |
-| 8 | Polish & Edge Cases | [testing.md](./testing.md) |
-| 9 | Deployment & Documentation | [deployment.md](./deployment.md) |
+| Phase | Description                      | Doc                                |
+| ----- | -------------------------------- | ---------------------------------- |
+| 1     | Project Scaffolding              | [setup.md](./setup.md)             |
+| 2     | Authentication & Player Identity | [api.md](./api.md)                 |
+| 3     | Server-Authoritative Game Logic  | [game-logic.md](./game-logic.md)   |
+| 4     | Matchmaking System               | [matchmaking.md](./matchmaking.md) |
+| 5     | Frontend Game UI                 | [frontend.md](./frontend.md)       |
+| 6     | Leaderboard System (Bonus)       | [api.md](./api.md)                 |
+| 7     | Timer-Based Mode (Bonus)         | [game-logic.md](./game-logic.md)   |
+| 8     | Polish & Edge Cases              | [testing.md](./testing.md)         |
+| 9     | Deployment & Documentation       | [deployment.md](./deployment.md)   |
 
 ### Cross-cutting Docs
 
@@ -97,8 +97,8 @@ Deliverables
 ● Deployed and accessible game URL/ mobile application
 ● Deployed Nakama server endpoint
 ● README with:
-    ○ Setup and installation instructions
-    ○ Architecture and design decisions
-    ○ Deployment process documentation
-    ○ API/server configuration details
-    ○ How to test the multiplayer functionality
+○ Setup and installation instructions
+○ Architecture and design decisions
+○ Deployment process documentation
+○ API/server configuration details
+○ How to test the multiplayer functionality

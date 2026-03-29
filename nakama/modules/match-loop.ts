@@ -13,7 +13,8 @@ const matchLoop: nkruntime.MatchLoopFunction = function (
     // Compute the tick rate that is actually active for this match.
     // During grace period for classic mode, we bump to GRACE_TICK_RATE.
     const activeTR = gs.mode === "timed" ? 10 : GRACE_TICK_RATE;
-    const elapsedSeconds = (tick - gs.disconnected.disconnectedAtTick) / activeTR;
+    const elapsedSeconds =
+      (tick - gs.disconnected.disconnectedAtTick) / activeTR;
 
     if (elapsedSeconds >= RECONNECT_GRACE_SECONDS) {
       const leavingSymbol = gs.disconnected.symbol;
@@ -22,14 +23,20 @@ const matchLoop: nkruntime.MatchLoopFunction = function (
       gs.status = "finished";
       gs.finishedAt = Date.now();
       gs.disconnected = null;
-      dispatcher.matchLabelUpdate(JSON.stringify({ mode: gs.mode, status: "finished" }));
+      dispatcher.matchLabelUpdate(
+        JSON.stringify({ mode: gs.mode, status: "finished" }),
+      );
 
       dispatcher.broadcastMessage(
         OP_OPPONENT_LEFT,
         JSON.stringify({ winner: winnerSymbol, reason: "disconnect" }),
       );
       submitMatchResult(nk, logger, gs);
-      logger.info("grace period expired: %s forfeited, %s wins", leavingSymbol, winnerSymbol);
+      logger.info(
+        "grace period expired: %s forfeited, %s wins",
+        leavingSymbol,
+        winnerSymbol,
+      );
       return { state: gs };
     }
   }
@@ -45,17 +52,27 @@ const matchLoop: nkruntime.MatchLoopFunction = function (
       gs.winner = opponent;
       gs.status = "finished";
       gs.finishedAt = Date.now();
-      dispatcher.matchLabelUpdate(JSON.stringify({ mode: gs.mode, status: "finished" }));
+      dispatcher.matchLabelUpdate(
+        JSON.stringify({ mode: gs.mode, status: "finished" }),
+      );
       broadcastGameOver(dispatcher, gs, "timeout");
       submitMatchResult(nk, logger, gs);
-      logger.info("game over: %s timed out, %s wins", gs.currentPlayer, opponent);
+      logger.info(
+        "game over: %s timed out, %s wins",
+        gs.currentPlayer,
+        opponent,
+      );
       return { state: gs };
     }
   }
 
   for (const message of messages) {
     if (message.opCode !== OP_MOVE) {
-      logger.warn("unknown op code %d from %s", message.opCode, message.sender.userId);
+      logger.warn(
+        "unknown op code %d from %s",
+        message.opCode,
+        message.sender.userId,
+      );
       continue;
     }
 
@@ -143,7 +160,9 @@ const matchLoop: nkruntime.MatchLoopFunction = function (
       gs.winner = winner;
       gs.status = "finished";
       gs.finishedAt = Date.now();
-      dispatcher.matchLabelUpdate(JSON.stringify({ mode: gs.mode, status: "finished" }));
+      dispatcher.matchLabelUpdate(
+        JSON.stringify({ mode: gs.mode, status: "finished" }),
+      );
       broadcastGameOver(dispatcher, gs, "win");
       submitMatchResult(nk, logger, gs);
       logger.info("game over: %s wins", winner);
@@ -151,7 +170,9 @@ const matchLoop: nkruntime.MatchLoopFunction = function (
       gs.winner = "draw";
       gs.status = "finished";
       gs.finishedAt = Date.now();
-      dispatcher.matchLabelUpdate(JSON.stringify({ mode: gs.mode, status: "finished" }));
+      dispatcher.matchLabelUpdate(
+        JSON.stringify({ mode: gs.mode, status: "finished" }),
+      );
       broadcastGameOver(dispatcher, gs, "draw");
       submitMatchResult(nk, logger, gs);
       logger.info("game over: draw");

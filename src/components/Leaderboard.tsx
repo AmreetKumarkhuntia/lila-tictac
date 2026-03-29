@@ -13,7 +13,10 @@ function getRankBadge(rank: number): string | null {
   }
 }
 
-export default function Leaderboard({ records, currentUserId }: LeaderboardProps) {
+export default function Leaderboard({
+  records,
+  currentUserId,
+}: LeaderboardProps) {
   if (records.length === 0) {
     return (
       <div className="rounded-xl bg-gray-100 p-8 text-center dark:bg-gray-800">

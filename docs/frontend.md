@@ -2,24 +2,24 @@
 
 ## Tech Stack
 
-| Library | Version | Purpose |
-|---------|---------|---------|
-| React | 18.x | UI framework |
-| TypeScript | 5.x | Type safety |
-| Vite | 5.x | Build tool and dev server |
-| Tailwind CSS | 3.x | Utility-first styling |
-| Zustand | 4.x | Client-side state management |
-| React Router | 6.x | Client-side routing |
-| Nakama JS SDK | 2.x | Nakama client communication |
+| Library       | Version | Purpose                      |
+| ------------- | ------- | ---------------------------- |
+| React         | 18.x    | UI framework                 |
+| TypeScript    | 5.x     | Type safety                  |
+| Vite          | 5.x     | Build tool and dev server    |
+| Tailwind CSS  | 3.x     | Utility-first styling        |
+| Zustand       | 4.x     | Client-side state management |
+| React Router  | 6.x     | Client-side routing          |
+| Nakama JS SDK | 2.x     | Nakama client communication  |
 
 ## Routing
 
-| Path | Page | Auth Required | Description |
-|------|------|--------------|-------------|
-| `/` | AuthPage | No | Username entry / auto-login |
-| `/home` | HomePage | Yes | Lobby, matchmaking, stats |
-| `/game/:matchId` | GamePage | Yes | Active game board |
-| `/leaderboard` | LeaderboardPage | Yes | Global rankings |
+| Path             | Page            | Auth Required | Description                 |
+| ---------------- | --------------- | ------------- | --------------------------- |
+| `/`              | AuthPage        | No            | Username entry / auto-login |
+| `/home`          | HomePage        | Yes           | Lobby, matchmaking, stats   |
+| `/game/:matchId` | GamePage        | Yes           | Active game board           |
+| `/leaderboard`   | LeaderboardPage | Yes           | Global rankings             |
 
 Route protection: redirect to `/` if no valid session exists.
 
@@ -73,6 +73,7 @@ interface AuthState {
 ```
 
 **Actions:**
+
 - `login(username)` — Authenticate via Nakama device ID, update username
 - `restoreSession()` — Load session from localStorage, refresh if expired
 - `logout()` — Clear session, redirect to auth
@@ -107,6 +108,7 @@ interface GameState {
 ```
 
 **Derived state:**
+
 - `isMyTurn` — computed from `currentPlayer === mySymbol`
 
 ### uiStore
@@ -158,6 +160,7 @@ function useMatch(matchId: string) {
 ```
 
 Message routing:
+
 - Op 10 (STATE_UPDATE) → `gameStore._handleStateUpdate`
 - Op 12 (GAME_OVER) → `gameStore._handleGameOver`
 - Op 14 (OPPONENT_LEFT) → `gameStore._handleOpponentLeft`
@@ -193,11 +196,11 @@ function useLeaderboard() {
 
 ### Breakpoints
 
-| Breakpoint | Width | Layout |
-|-----------|-------|--------|
-| Mobile (default) | 320px - 639px | Single column, full-width board |
-| Tablet | 640px - 1023px | Centered board with side margins |
-| Desktop | 1024px+ | Centered board, max-width container |
+| Breakpoint       | Width          | Layout                              |
+| ---------------- | -------------- | ----------------------------------- |
+| Mobile (default) | 320px - 639px  | Single column, full-width board     |
+| Tablet           | 640px - 1023px | Centered board with side margins    |
+| Desktop          | 1024px+        | Centered board, max-width container |
 
 ### Mobile-First Approach
 
@@ -220,6 +223,7 @@ function useLeaderboard() {
 ### Layout Per Page
 
 **AuthPage:**
+
 ```
 ┌─────────────────────┐
 │                     │
@@ -237,6 +241,7 @@ function useLeaderboard() {
 ```
 
 **GamePage:**
+
 ```
 ┌─────────────────────┐
 │  Opponent (X/O)     │
@@ -256,6 +261,7 @@ function useLeaderboard() {
 ```
 
 **HomePage:**
+
 ```
 ┌─────────────────────┐
 │  Welcome, Player    │
@@ -314,14 +320,14 @@ Board re-renders with new state, isMyTurn updates
 
 ## Animations
 
-| Element | Animation | Trigger |
-|---------|----------|---------|
-| X/O placement | Scale in (0 → 1, 150ms) | New symbol appears on board |
-| Win line | Draw line across winning cells (300ms) | GAME_OVER with winningLine |
-| Game result overlay | Fade in + slide up (200ms) | Game finishes |
-| Timer urgency | Color transition + pulse | Timer < 5s |
-| Matchmaking | Pulsing dots animation | Searching for opponent |
-| Cell hover | Background color shift (touch: active state) | Hover / touch |
+| Element             | Animation                                    | Trigger                     |
+| ------------------- | -------------------------------------------- | --------------------------- |
+| X/O placement       | Scale in (0 → 1, 150ms)                      | New symbol appears on board |
+| Win line            | Draw line across winning cells (300ms)       | GAME_OVER with winningLine  |
+| Game result overlay | Fade in + slide up (200ms)                   | Game finishes               |
+| Timer urgency       | Color transition + pulse                     | Timer < 5s                  |
+| Matchmaking         | Pulsing dots animation                       | Searching for opponent      |
+| Cell hover          | Background color shift (touch: active state) | Hover / touch               |
 
 ## Error Handling
 

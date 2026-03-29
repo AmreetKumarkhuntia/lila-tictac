@@ -8,7 +8,10 @@ import HomePage from "@/pages/HomePage";
 import GamePage from "@/pages/GamePage";
 import LeaderboardPage from "@/pages/LeaderboardPage";
 import ToastContainer from "@/components/ToastContainer";
-import type { ErrorBoundaryProps, ErrorBoundaryState } from "@/types/components";
+import type {
+  ErrorBoundaryProps,
+  ErrorBoundaryState,
+} from "@/types/components";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -34,7 +37,9 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
     if (this.state.hasError) {
       return (
         <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gray-100 px-4 text-gray-900 dark:bg-gray-950 dark:text-white">
-          <h1 className="text-2xl font-bold text-rose-500">Something went wrong</h1>
+          <h1 className="text-2xl font-bold text-rose-500">
+            Something went wrong
+          </h1>
           <p className="max-w-md text-center text-sm text-gray-500 dark:text-gray-400">
             {this.state.error?.message || "An unexpected error occurred."}
           </p>

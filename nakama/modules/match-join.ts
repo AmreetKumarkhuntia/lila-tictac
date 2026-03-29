@@ -7,18 +7,31 @@ const matchJoinAttempt: nkruntime.MatchJoinAttemptFunction = function (
   state: nkruntime.MatchState,
   presence: nkruntime.Presence,
   metadata: { [key: string]: string },
-): { state: nkruntime.MatchState; accept: boolean; rejectMessage?: string } | null {
+): {
+  state: nkruntime.MatchState;
+  accept: boolean;
+  rejectMessage?: string;
+} | null {
   const gs = state as GameState;
 
   if (gs.status === "finished") {
-    return { state: gs, accept: false, rejectMessage: "Game is already finished" };
+    return {
+      state: gs,
+      accept: false,
+      rejectMessage: "Game is already finished",
+    };
   }
 
-  const isReconnecting = gs.disconnected !== null && gs.disconnected.userId === presence.userId;
+  const isReconnecting =
+    gs.disconnected !== null && gs.disconnected.userId === presence.userId;
 
   if (!isReconnecting) {
     if (gs.players.X === presence.userId || gs.players.O === presence.userId) {
-      return { state: gs, accept: false, rejectMessage: "Already in this match" };
+      return {
+        state: gs,
+        accept: false,
+        rejectMessage: "Already in this match",
+      };
     }
   }
 
@@ -26,7 +39,11 @@ const matchJoinAttempt: nkruntime.MatchJoinAttemptFunction = function (
     return { state: gs, accept: false, rejectMessage: "Match is full" };
   }
 
-  logger.info("player %s attempting to join (reconnect=%s)", presence.userId, isReconnecting ? "yes" : "no");
+  logger.info(
+    "player %s attempting to join (reconnect=%s)",
+    presence.userId,
+    isReconnecting ? "yes" : "no",
+  );
   return { state: gs, accept: true };
 };
 
@@ -42,9 +59,17 @@ const matchJoin: nkruntime.MatchJoinFunction = function (
   const gs = state as GameState;
 
   for (const presence of presences) {
-    if (gs.disconnected !== null && gs.disconnected.userId === presence.userId) {
+    if (
+      gs.disconnected !== null &&
+      gs.disconnected.userId === presence.userId
+    ) {
       const reconSymbol = gs.disconnected.symbol;
-      logger.info("player %s (%s) reconnected as %s", presence.userId, presence.username, reconSymbol);
+      logger.info(
+        "player %s (%s) reconnected as %s",
+        presence.userId,
+        presence.username,
+        reconSymbol,
+      );
 
       gs.presenceMap[presence.userId] = presence;
       gs.usernames[presence.userId] = presence.username;
@@ -53,16 +78,26 @@ const matchJoin: nkruntime.MatchJoinFunction = function (
 
       // Restore tick rate to the original value (undo grace period override)
       if (gs.originalTickRate !== undefined) {
-        dispatcher.matchKick([]);                        // no-op, just triggers label update ability
+        dispatcher.matchKick([]); // no-op, just triggers label update ability
       }
 
       const playersInfo = {
-        X: { userId: gs.players.X!, username: gs.usernames[gs.players.X!] || "Player X" },
-        O: { userId: gs.players.O!, username: gs.usernames[gs.players.O!] || "Player O" },
+        X: {
+          userId: gs.players.X!,
+          username: gs.usernames[gs.players.X!] || "Player X",
+        },
+        O: {
+          userId: gs.players.O!,
+          username: gs.usernames[gs.players.O!] || "Player O",
+        },
       };
       dispatcher.broadcastMessage(
         OP_GAME_START,
-        JSON.stringify({ players: playersInfo, mode: gs.mode, assignedSymbol: reconSymbol }),
+        JSON.stringify({
+          players: playersInfo,
+          mode: gs.mode,
+          assignedSymbol: reconSymbol,
+        }),
         [presence],
       );
 
@@ -94,7 +129,12 @@ const matchJoin: nkruntime.MatchJoinFunction = function (
 
     gs.usernames[presence.userId] = presence.username;
     const assignedSymbol = gs.players.X === presence.userId ? "X" : "O";
-    logger.info("player %s (%s) assigned as %s", presence.userId, presence.username, assignedSymbol);
+    logger.info(
+      "player %s (%s) assigned as %s",
+      presence.userId,
+      presence.username,
+      assignedSymbol,
+    );
 
     if (gs.players.X !== null && gs.players.O !== null) {
       gs.status = "playing";
@@ -104,11 +144,19 @@ const matchJoin: nkruntime.MatchJoinFunction = function (
         gs.timers.lastMoveAt = tick;
       }
 
-      dispatcher.matchLabelUpdate(JSON.stringify({ mode: gs.mode, status: "playing" }));
+      dispatcher.matchLabelUpdate(
+        JSON.stringify({ mode: gs.mode, status: "playing" }),
+      );
 
       const playersInfo = {
-        X: { userId: gs.players.X, username: gs.usernames[gs.players.X] || "Player X" },
-        O: { userId: gs.players.O, username: gs.usernames[gs.players.O] || "Player O" },
+        X: {
+          userId: gs.players.X,
+          username: gs.usernames[gs.players.X] || "Player X",
+        },
+        O: {
+          userId: gs.players.O,
+          username: gs.usernames[gs.players.O] || "Player O",
+        },
       };
 
       const xPresence = gs.presenceMap[gs.players.X];
@@ -117,7 +165,11 @@ const matchJoin: nkruntime.MatchJoinFunction = function (
       if (xPresence) {
         dispatcher.broadcastMessage(
           OP_GAME_START,
-          JSON.stringify({ players: playersInfo, mode: gs.mode, assignedSymbol: "X" }),
+          JSON.stringify({
+            players: playersInfo,
+            mode: gs.mode,
+            assignedSymbol: "X",
+          }),
           [xPresence],
         );
       }
@@ -125,7 +177,11 @@ const matchJoin: nkruntime.MatchJoinFunction = function (
       if (oPresence) {
         dispatcher.broadcastMessage(
           OP_GAME_START,
-          JSON.stringify({ players: playersInfo, mode: gs.mode, assignedSymbol: "O" }),
+          JSON.stringify({
+            players: playersInfo,
+            mode: gs.mode,
+            assignedSymbol: "O",
+          }),
           [oPresence],
         );
       }

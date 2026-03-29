@@ -40,6 +40,7 @@ Two ways to start a game:
 ### Implementation Steps
 
 1. **Add matchmaker ticket**
+
    ```typescript
    const ticket = await client.addMatchmaker(session, {
      query: "+properties.mode:classic",
@@ -50,6 +51,7 @@ Two ways to start a game:
    ```
 
 2. **Listen for matchmaker match**
+
    ```typescript
    socket.onmatchmakermatched = (matched) => {
      const matchId = matched.matchId;
@@ -65,16 +67,17 @@ Two ways to start a game:
 
 ### Matchmaker Properties
 
-| Property | Value | Description |
-|----------|-------|-------------|
-| `mode` | `"classic"` or `"timed"` | Game mode selection |
-| `minCount` | `2` | Exactly 2 players needed |
-| `maxCount` | `2` | No more than 2 |
-| `query` | `+properties.mode:classic` | Only match with same mode |
+| Property   | Value                      | Description               |
+| ---------- | -------------------------- | ------------------------- |
+| `mode`     | `"classic"` or `"timed"`   | Game mode selection       |
+| `minCount` | `2`                        | Exactly 2 players needed  |
+| `maxCount` | `2`                        | No more than 2            |
+| `query`    | `+properties.mode:classic` | Only match with same mode |
 
 ### Mode Selection
 
 On the Home page, two buttons:
+
 - **Classic** → matchmaker with `mode: "classic"`
 - **Timed (30s)** → matchmaker with `mode: "timed"`
 
@@ -113,6 +116,7 @@ Players are only matched with others who selected the same mode.
 ### Implementation
 
 **Create private match (RPC):**
+
 ```typescript
 const response = await client.rpc(session, "create_private_match", {
   mode: "classic", // or "timed"
@@ -121,6 +125,7 @@ const matchId = response.payload.matchId;
 ```
 
 **Join private match:**
+
 ```typescript
 const match = await socket.joinMatch(matchId);
 ```
@@ -181,6 +186,7 @@ If a player briefly loses connection (page refresh, network blip):
 4. Game resumes from where it left off
 
 For timed mode:
+
 - Timer pauses during reconnect window (up to 10 seconds)
 - If player doesn't reconnect within 10 seconds → auto-forfeit
 

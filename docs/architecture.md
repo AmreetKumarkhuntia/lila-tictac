@@ -6,15 +6,15 @@ Multiplayer Tic-Tac-Toe with server-authoritative architecture. All game logic, 
 
 ## Tech Stack
 
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| Frontend | React 18 + TypeScript + Vite | UI, client-side rendering |
-| Styling | Tailwind CSS | Responsive, mobile-first design |
-| State Management | Zustand | Client-side state (auth, game, UI) |
-| Backend | Nakama 3.x | Server-authoritative game engine |
-| Database | PostgreSQL | Nakama persistence (users, storage, leaderboards) |
-| Runtime | Nakama TypeScript Runtime (JS) | Custom server logic (match handler, RPCs) |
-| Containerization | Docker + Docker Compose | Local dev and production deployment |
+| Layer            | Technology                     | Purpose                                           |
+| ---------------- | ------------------------------ | ------------------------------------------------- |
+| Frontend         | React 18 + TypeScript + Vite   | UI, client-side rendering                         |
+| Styling          | Tailwind CSS                   | Responsive, mobile-first design                   |
+| State Management | Zustand                        | Client-side state (auth, game, UI)                |
+| Backend          | Nakama 3.x                     | Server-authoritative game engine                  |
+| Database         | PostgreSQL                     | Nakama persistence (users, storage, leaderboards) |
+| Runtime          | Nakama TypeScript Runtime (JS) | Custom server logic (match handler, RPCs)         |
+| Containerization | Docker + Docker Compose        | Local dev and production deployment               |
 
 ## System Architecture
 
@@ -153,6 +153,7 @@ Add matchmaker ticket               Add matchmaker ticket
 ### Why Authoritative Matches (not Relayed)?
 
 Nakama supports two match types:
+
 - **Relayed:** Server passes messages between clients. No server-side logic.
 - **Authoritative:** Server runs a match handler with full game loop. Server owns all state.
 
@@ -160,20 +161,20 @@ We use **authoritative** because the requirement explicitly states server-side v
 
 ## Client-Server Communication
 
-| Channel | Protocol | Purpose |
-|---------|----------|---------|
-| Auth | HTTP | Login, session create, token refresh |
-| Matchmaker | HTTP + WebSocket | Add/cancel ticket, receive matched event |
-| Match | WebSocket | Real-time game moves, state updates |
-| RPC | HTTP | Create private match, submit score, fetch leaderboard |
-| Storage | HTTP via RPC | Read/write player stats |
+| Channel    | Protocol         | Purpose                                               |
+| ---------- | ---------------- | ----------------------------------------------------- |
+| Auth       | HTTP             | Login, session create, token refresh                  |
+| Matchmaker | HTTP + WebSocket | Add/cancel ticket, receive matched event              |
+| Match      | WebSocket        | Real-time game moves, state updates                   |
+| RPC        | HTTP             | Create private match, submit score, fetch leaderboard |
+| Storage    | HTTP via RPC     | Read/write player stats                               |
 
 ## Ports
 
-| Service | Port | Purpose |
-|---------|------|---------|
-| Nakama API | 7350 | HTTP REST API |
-| Nakama GRPC | 7349 | GRPC (internal) |
-| Nakama WebSocket | 7351 | Real-time communication |
-| Frontend (dev) | 5173 | Vite dev server |
-| PostgreSQL | 5432 | Database (internal to Docker) |
+| Service          | Port | Purpose                       |
+| ---------------- | ---- | ----------------------------- |
+| Nakama API       | 7350 | HTTP REST API                 |
+| Nakama GRPC      | 7349 | GRPC (internal)               |
+| Nakama WebSocket | 7351 | Real-time communication       |
+| Frontend (dev)   | 5173 | Vite dev server               |
+| PostgreSQL       | 5432 | Database (internal to Docker) |

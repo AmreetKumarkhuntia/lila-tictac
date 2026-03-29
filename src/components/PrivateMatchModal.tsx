@@ -1,12 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useMatchmaker } from "@/hooks/useMatchmaker";
 import { useUiStore } from "@/store/uiStore";
+import { XMarkIcon } from "@/components/icons";
 import type { GameMode } from "@/types/game";
 import type { PrivateMatchModalProps } from "@/types/components";
 
 type Tab = "create" | "join";
 
-export default function PrivateMatchModal({ isOpen, onClose }: PrivateMatchModalProps) {
+export default function PrivateMatchModal({
+  isOpen,
+  onClose,
+}: PrivateMatchModalProps) {
   const [tab, setTab] = useState<Tab>("create");
   const [mode, setMode] = useState<GameMode>("classic");
   const [createdMatchId, setCreatedMatchId] = useState<string | null>(null);
@@ -106,7 +110,10 @@ export default function PrivateMatchModal({ isOpen, onClose }: PrivateMatchModal
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" role="presentation">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+      role="presentation"
+    >
       <div
         ref={dialogRef}
         role="dialog"
@@ -116,7 +123,10 @@ export default function PrivateMatchModal({ isOpen, onClose }: PrivateMatchModal
       >
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
-          <h2 id="private-match-title" className="text-lg font-bold text-gray-900 dark:text-white">
+          <h2
+            id="private-match-title"
+            className="text-lg font-bold text-gray-900 dark:text-white"
+          >
             Private Match
           </h2>
           <button
@@ -124,9 +134,7 @@ export default function PrivateMatchModal({ isOpen, onClose }: PrivateMatchModal
             aria-label="Close dialog"
             className="rounded-lg p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-200"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
-              <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
-            </svg>
+            <XMarkIcon className="h-5 w-5" />
           </button>
         </div>
 

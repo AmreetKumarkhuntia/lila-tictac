@@ -33,7 +33,11 @@ export function handleMatchData(matchData: MatchData): void {
     return;
   }
 
-  console.log("[match] received opCode=%d payload=%s", opCode, payload.slice(0, 200));
+  console.log(
+    "[match] received opCode=%d payload=%s",
+    opCode,
+    payload.slice(0, 200),
+  );
 
   switch (opCode) {
     case OP_CODE.STATE_UPDATE: {
@@ -44,17 +48,17 @@ export function handleMatchData(matchData: MatchData): void {
 
     case OP_CODE.GAME_START: {
       const data: GameStartMessage = JSON.parse(payload);
-      useGameStore.getState().setGameStart(
-        data.players,
-        data.mode,
-        data.assignedSymbol,
-      );
+      useGameStore
+        .getState()
+        .setGameStart(data.players, data.mode, data.assignedSymbol);
       break;
     }
 
     case OP_CODE.GAME_OVER: {
       const data: GameOverMessage = JSON.parse(payload);
-      useGameStore.getState().setGameOver(data.winner, data.winningLine, data.reason);
+      useGameStore
+        .getState()
+        .setGameOver(data.winner, data.winningLine, data.reason);
       break;
     }
 
@@ -69,7 +73,9 @@ export function handleMatchData(matchData: MatchData): void {
       if (data.reason === "disconnected_temporary") {
         // Opponent disconnected but may reconnect — show waiting state
         useGameStore.getState().setOpponentDisconnected(true);
-        useUiStore.getState().addToast("Opponent disconnected — waiting for reconnect...", "info");
+        useUiStore
+          .getState()
+          .addToast("Opponent disconnected — waiting for reconnect...", "info");
       } else {
         // Permanent disconnect / forfeit
         useGameStore.getState().setGameOver(data.winner, null, "forfeit");
