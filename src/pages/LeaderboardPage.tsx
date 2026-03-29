@@ -2,12 +2,19 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { useAuthStore } from "@/store/authStore";
-import Leaderboard from "@/components/Leaderboard";
+import Button from "@/components/Button";
+import TabGroup from "@/components/TabGroup";
+import Leaderboard from "@/sections/Leaderboard";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { ArrowLeftIcon, RefreshIcon } from "@/components/icons";
 import type { PlayerStats } from "@/types/leaderboard";
 
 type Tab = "rankings" | "stats";
+
+const TABS: { value: Tab; label: string }[] = [
+  { value: "rankings", label: "Global Rankings" },
+  { value: "stats", label: "My Stats" },
+];
 
 export default function LeaderboardPage() {
   const navigate = useNavigate();
@@ -20,47 +27,32 @@ export default function LeaderboardPage() {
     <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4 py-6 text-gray-900 dark:bg-gray-950 dark:text-white">
       <div className="w-full max-w-md">
         <div className="mb-4 flex items-center justify-between">
-          <button
+          <Button
+            variant="icon"
             onClick={() => navigate("/home")}
-            className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-200 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
             title="Back to Home"
           >
             <ArrowLeftIcon className="h-5 w-5" />
-          </button>
+          </Button>
           <h1 className="text-xl font-bold">Leaderboard</h1>
-          <button
+          <Button
+            variant="icon"
             onClick={refresh}
             disabled={isLoading}
-            className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-200 hover:text-gray-700 disabled:opacity-50 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
             title="Refresh"
           >
             <RefreshIcon
               className={`h-5 w-5 ${isLoading ? "animate-spin" : ""}`}
             />
-          </button>
+          </Button>
         </div>
 
-        <div className="mb-4 flex rounded-lg border border-gray-200 bg-gray-50 p-1 dark:border-gray-700 dark:bg-gray-800">
-          <button
-            onClick={() => setActiveTab("rankings")}
-            className={`flex-1 rounded-md px-3 py-2 text-sm font-semibold transition ${
-              activeTab === "rankings"
-                ? "bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white"
-                : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-            }`}
-          >
-            Global Rankings
-          </button>
-          <button
-            onClick={() => setActiveTab("stats")}
-            className={`flex-1 rounded-md px-3 py-2 text-sm font-semibold transition ${
-              activeTab === "stats"
-                ? "bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white"
-                : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-            }`}
-          >
-            My Stats
-          </button>
+        <div className="mb-4">
+          <TabGroup
+            options={TABS}
+            value={activeTab}
+            onChange={setActiveTab}
+          />
         </div>
 
         <div className="rounded-2xl bg-white p-4 shadow-xl dark:bg-gray-900">
@@ -71,12 +63,9 @@ export default function LeaderboardPage() {
           ) : error ? (
             <div className="py-8 text-center">
               <p className="mb-3 text-sm text-red-500">{error}</p>
-              <button
-                onClick={refresh}
-                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
-              >
+              <Button onClick={refresh} size="sm">
                 Retry
-              </button>
+              </Button>
             </div>
           ) : activeTab === "rankings" ? (
             <div>

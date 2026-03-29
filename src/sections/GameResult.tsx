@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { GameResultProps } from "@/types/components";
 import { SCORE_WIN, SCORE_DRAW } from "@/lib/constants";
+import Button from "@/components/Button";
 
 export default function GameResult({
   winner,
@@ -179,18 +180,10 @@ export default function GameResult({
       )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-        <button
-          onClick={onLeave}
-          className="rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 active:bg-indigo-800"
-        >
-          Play Again
-        </button>
-        <button
-          onClick={onLeave}
-          className="rounded-lg border border-gray-300 px-6 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100 active:bg-gray-200 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800 dark:active:bg-gray-700"
-        >
+        <Button onClick={onLeave}>Play Again</Button>
+        <Button variant="secondary" onClick={onLeave}>
           Back to Home
-        </button>
+        </Button>
       </div>
     </div>
   );

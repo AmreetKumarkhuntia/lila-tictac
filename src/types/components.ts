@@ -4,7 +4,7 @@
 // rendering logic rather than type definitions.
 // ============================================================
 
-import type { ReactNode } from "react";
+import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from "react";
 import type {
   CellValue,
   PlayerInfo,
@@ -13,6 +13,45 @@ import type {
   WinningLine,
 } from "@/types/game";
 import type { LeaderboardRecord, PlayerStats } from "@/types/leaderboard";
+
+// --- Button -----------------------------------------------------------------
+
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "icon";
+export type ButtonSize = "sm" | "md" | "lg";
+
+export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  fullWidth?: boolean;
+  loading?: boolean;
+  loadingText?: string;
+}
+
+// --- Input ------------------------------------------------------------------
+
+export type InputSize = "sm" | "md";
+
+export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+  label?: string;
+  error?: string | null;
+  mono?: boolean;
+  inputSize?: InputSize;
+}
+
+// --- TabGroup ---------------------------------------------------------------
+
+export interface TabOption<T extends string> {
+  value: T;
+  label: string;
+}
+
+export interface TabGroupProps<T extends string> {
+  options: TabOption<T>[];
+  value: T;
+  onChange: (value: T) => void;
+  disabled?: boolean;
+  size?: "sm" | "md";
+}
 
 // --- Board & Cell -----------------------------------------------------------
 

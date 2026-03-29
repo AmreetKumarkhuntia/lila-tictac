@@ -8,9 +8,10 @@ import { clearPersistedMatchId } from "@/hooks/useConnectionStatus";
 import { nakamaClient } from "@/lib/nakama";
 import { LEADERBOARD_ID } from "@/lib/constants";
 import Board from "@/components/Board";
-import PlayerCard from "@/components/PlayerCard";
-import GameResult from "@/components/GameResult";
+import Button from "@/components/Button";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import PlayerCard from "@/sections/PlayerCard";
+import GameResult from "@/sections/GameResult";
 import type { PlayerStats } from "@/types/leaderboard";
 
 export default function GamePage() {
@@ -228,12 +229,14 @@ export default function GamePage() {
         )}
 
         {!isGameOver && (
-          <button
+          <Button
+            variant="secondary"
             onClick={handleLeave}
-            className="w-full rounded-lg border border-gray-300 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-200 active:bg-gray-300 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-800 dark:active:bg-gray-700"
+            fullWidth
+            size="sm"
           >
             Leave Match
-          </button>
+          </Button>
         )}
       </div>
 
