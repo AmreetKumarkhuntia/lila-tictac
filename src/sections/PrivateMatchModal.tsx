@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useMatchmaker } from "@/hooks/useMatchmaker";
+import { useGameStore } from "@/store/gameStore";
 import { useUiStore } from "@/store/uiStore";
 import Button from "@/components/Button";
 import Input from "@/components/Input";
@@ -34,6 +36,16 @@ export default function PrivateMatchModal({
   const { createAndJoinPrivateMatch, joinPrivateMatch } = useMatchmaker();
   const isLoading = useUiStore((s) => s.isLoading);
   const dialogRef = useRef<HTMLDivElement>(null);
+
+  const navigate = useNavigate();
+  const matchId = useGameStore((s) => s.matchId);
+  const status = useGameStore((s) => s.status);
+
+  useEffect(() => {
+    if (waitingForOpponent && matchId && status === "playing") {
+      navigate(`/game/${matchId}`);
+    }
+  }, [waitingForOpponent, matchId, status, navigate]);
 
   // Focus trap: trap Tab/Shift+Tab inside the modal and handle Escape
   const handleKeyDown = useCallback(

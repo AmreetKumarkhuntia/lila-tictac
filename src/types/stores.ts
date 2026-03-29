@@ -85,6 +85,8 @@ export interface AuthState {
   session: Session | null;
   username: string | null;
   isAuthenticated: boolean;
+  isLoading: boolean;
   setSession: (session: Session, username: string) => void;
   clearSession: () => void;
+  restoreSession: () => Promise<void>;
 }

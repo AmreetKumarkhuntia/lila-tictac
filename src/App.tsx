@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { Component, useEffect } from "react";
 import type { ErrorInfo } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
@@ -65,42 +65,62 @@ function ConnectionGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function SessionRestore({ children }: { children: React.ReactNode }) {
+  const { isLoading, restoreSession } = useAuthStore();
+
+  useEffect(() => {
+    restoreSession();
+  }, [restoreSession]);
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-100 dark:bg-gray-950">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent" />
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
-      <ConnectionGate>
-        <ErrorBoundary>
-          <Routes>
-            <Route path="/auth" element={<AuthPage />} />
-            <Route
-              path="/home"
-              element={
-                <ProtectedRoute>
-                  <HomePage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/game/:matchId"
-              element={
-                <ProtectedRoute>
-                  <GamePage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/leaderboard"
-              element={
-                <ProtectedRoute>
-                  <LeaderboardPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<Navigate to="/auth" replace />} />
-          </Routes>
-        </ErrorBoundary>
-        <ToastContainer />
-      </ConnectionGate>
+      <SessionRestore>
+        <ConnectionGate>
+          <ErrorBoundary>
+            <Routes>
+              <Route path="/auth" element={<AuthPage />} />
+              <Route
+                path="/home"
+                element={
+                  <ProtectedRoute>
+                    <HomePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/game/:matchId"
+                element={
+                  <ProtectedRoute>
+                    <GamePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/leaderboard"
+                element={
+                  <ProtectedRoute>
+                    <LeaderboardPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<Navigate to="/auth" replace />} />
+            </Routes>
+          </ErrorBoundary>
+          <ToastContainer />
+        </ConnectionGate>
+      </SessionRestore>
     </BrowserRouter>
   );
 }

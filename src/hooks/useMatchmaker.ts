@@ -205,6 +205,9 @@ export function useMatchmaker() {
 
       try {
         const socket = await getSocket(session);
+
+        socket.onmatchdata = handleMatchData;
+
         const match = await socket.joinMatch(matchId);
 
         useGameStore.getState().setMatchId(match.match_id);
@@ -241,6 +244,9 @@ export function useMatchmaker() {
 
       try {
         const socket = await getSocket(session);
+
+        socket.onmatchdata = handleMatchData;
+
         const match = await socket.joinMatch(matchId);
         useGameStore.getState().setMatchId(match.match_id);
         return match.match_id;
