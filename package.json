@@ -22,7 +22,8 @@
     "start": "npm run nakama:build && docker-compose up -d && vite",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "setup": "cp -n .env.example .env && npm install && npm run nakama:install"
+    "setup": "cp -n .env.example .env && npm install && npm run nakama:install",
+    "prepare": "husky"
   },
   "dependencies": {
     "@heroiclabs/nakama-js": "^2.8.0",
@@ -40,7 +41,23 @@
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.26",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
     "prettier": "^3.8.1",
     "typescript-eslint": "^8.57.2"
+  },
+  "lint-staged": {
+    "src/**/*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write",
+      "bash -c 'tsc -b --noEmit'"
+    ],
+    "nakama/**/*.ts": [
+      "prettier --write",
+      "bash -c 'npm --prefix nakama run type-check'"
+    ],
+    "*.{json,md,yaml,yml,css,html}": [
+      "prettier --write"
+    ]
   }
 }
