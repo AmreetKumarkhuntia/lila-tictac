@@ -28,7 +28,18 @@ export function useNakama() {
     setSession(newSession, username);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    if (session) {
+      try {
+        await nakamaClient.sessionLogout(
+          session,
+          session.token,
+          session.refresh_token,
+        );
+      } catch {
+        // ignore — session may already be invalid
+      }
+    }
     clearSession();
   };
 

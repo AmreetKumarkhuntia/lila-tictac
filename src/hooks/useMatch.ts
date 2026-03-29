@@ -66,6 +66,9 @@ export function useMatch() {
   const leaveMatch = useCallback(async () => {
     const matchId = useGameStore.getState().matchId;
 
+    useGameStore.getState().resetGame();
+    clearPersistedMatchId();
+
     if (session && matchId) {
       try {
         const socket = await getSocket(session);
@@ -76,8 +79,6 @@ export function useMatch() {
     }
 
     disconnectSocket();
-    clearPersistedMatchId();
-    useGameStore.getState().resetGame();
   }, [session]);
 
   return {

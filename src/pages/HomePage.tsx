@@ -28,8 +28,8 @@ export default function HomePage() {
   const [showPrivateModal, setShowPrivateModal] = useState(false);
   const [selectedMode, setSelectedMode] = useState<GameMode>("classic");
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate("/auth", { replace: true });
   };
 
