@@ -40,5 +40,15 @@ services:
       timeout: 5s
       retries: 5
 
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      nakama:
+        condition: service_healthy
+
 volumes:
   postgres-data:

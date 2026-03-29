@@ -1,0 +1,9 @@
+node_modules
+dist
+build
+nakama/build
+*.local
+.env
+.env.*
+!.env.example
+package-lock.json
