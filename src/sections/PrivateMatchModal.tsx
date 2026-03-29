@@ -1,11 +1,24 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useMatchmaker } from "@/hooks/useMatchmaker";
 import { useUiStore } from "@/store/uiStore";
+import Button from "@/components/Button";
+import Input from "@/components/Input";
+import TabGroup from "@/components/TabGroup";
 import { XMarkIcon } from "@/components/icons";
 import type { GameMode } from "@/types/game";
 import type { PrivateMatchModalProps } from "@/types/components";
 
 type Tab = "create" | "join";
+
+const TAB_OPTIONS: { value: Tab; label: string }[] = [
+  { value: "create", label: "Create" },
+  { value: "join", label: "Join" },
+];
+
+const MODE_OPTIONS: { value: GameMode; label: string }[] = [
+  { value: "classic", label: "Classic" },
+  { value: "timed", label: "Timed (30s)" },
+];
 
 export default function PrivateMatchModal({
   isOpen,
@@ -109,6 +122,16 @@ export default function PrivateMatchModal({
     onClose();
   };
 
+  const handleTabChange = (next: Tab) => {
+    setTab(next);
+    if (next === "create") {
+      setJoinInput("");
+    } else {
+      setCreatedMatchId(null);
+      setWaitingForOpponent(false);
+    }
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
@@ -129,43 +152,23 @@ export default function PrivateMatchModal({
           >
             Private Match
           </h2>
-          <button
+          <Button
+            variant="icon"
             onClick={handleClose}
             aria-label="Close dialog"
-            className="rounded-lg p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+            className="p-1"
           >
             <XMarkIcon className="h-5 w-5" />
-          </button>
+          </Button>
         </div>
 
-        <div className="mb-4 flex rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
-          <button
-            onClick={() => {
-              setTab("create");
-              setJoinInput("");
-            }}
-            className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition ${
-              tab === "create"
-                ? "bg-white text-gray-900 shadow dark:bg-gray-700 dark:text-white"
-                : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-            }`}
-          >
-            Create
-          </button>
-          <button
-            onClick={() => {
-              setTab("join");
-              setCreatedMatchId(null);
-              setWaitingForOpponent(false);
-            }}
-            className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition ${
-              tab === "join"
-                ? "bg-white text-gray-900 shadow dark:bg-gray-700 dark:text-white"
-                : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-            }`}
-          >
-            Join
-          </button>
+        <div className="mb-4">
+          <TabGroup
+            options={TAB_OPTIONS}
+            value={tab}
+            onChange={handleTabChange}
+            size="sm"
+          />
         </div>
 
         {tab === "create" && (
@@ -175,35 +178,22 @@ export default function PrivateMatchModal({
                 <p className="mb-3 text-sm text-gray-500 dark:text-gray-400">
                   Create a new match and share the ID with a friend.
                 </p>
-                <div className="mb-3 flex rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
-                  <button
-                    onClick={() => setMode("classic")}
-                    className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition ${
-                      mode === "classic"
-                        ? "bg-white text-gray-900 shadow dark:bg-gray-700 dark:text-white"
-                        : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                    }`}
-                  >
-                    Classic
-                  </button>
-                  <button
-                    onClick={() => setMode("timed")}
-                    className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition ${
-                      mode === "timed"
-                        ? "bg-white text-gray-900 shadow dark:bg-gray-700 dark:text-white"
-                        : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                    }`}
-                  >
-                    Timed (30s)
-                  </button>
+                <div className="mb-3">
+                  <TabGroup
+                    options={MODE_OPTIONS}
+                    value={mode}
+                    onChange={setMode}
+                    size="sm"
+                  />
                 </div>
-                <button
+                <Button
                   onClick={handleCreate}
-                  disabled={isLoading}
-                  className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  loading={isLoading}
+                  loadingText="Creating..."
+                  fullWidth
                 >
-                  {isLoading ? "Creating..." : "Create Match"}
-                </button>
+                  Create Match
+                </Button>
               </div>
             ) : (
               <div>
@@ -211,17 +201,21 @@ export default function PrivateMatchModal({
                   Share this match ID with your friend:
                 </p>
                 <div className="mb-3 flex items-center gap-2">
-                  <input
+                  <Input
                     readOnly
                     value={createdMatchId}
-                    className="flex-1 rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 font-mono text-xs text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                    mono
+                    inputSize="sm"
+                    className="text-xs"
                   />
-                  <button
+                  <Button
+                    variant="secondary"
                     onClick={handleCopy}
-                    className="shrink-0 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                    size="sm"
+                    className="shrink-0"
                   >
                     {copied ? "Copied!" : "Copy"}
-                  </button>
+                  </Button>
                 </div>
                 {waitingForOpponent && (
                   <div className="flex items-center justify-center gap-2 rounded-lg bg-amber-50 px-3 py-2 dark:bg-amber-900/20">
@@ -241,22 +235,26 @@ export default function PrivateMatchModal({
             <p className="mb-3 text-sm text-gray-500 dark:text-gray-400">
               Enter the match ID shared by your friend.
             </p>
-            <input
+            <Input
               value={joinInput}
               onChange={(e) => setJoinInput(e.target.value)}
               placeholder="Paste match ID here"
-              className="mb-3 w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 font-mono text-sm text-gray-900 placeholder-gray-400 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
+              mono
+              inputSize="sm"
+              className="mb-3"
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleJoin();
               }}
             />
-            <button
+            <Button
               onClick={handleJoin}
-              disabled={isLoading || !joinInput.trim()}
-              className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={!joinInput.trim()}
+              loading={isLoading}
+              loadingText="Joining..."
+              fullWidth
             >
-              {isLoading ? "Joining..." : "Join Match"}
-            </button>
+              Join Match
+            </Button>
           </div>
         )}
       </div>

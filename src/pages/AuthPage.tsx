@@ -2,13 +2,20 @@ import { useState, type FormEvent } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useNakama } from "@/hooks/useNakama";
 import { useUiStore } from "@/store/uiStore";
-import LoadingSpinner from "@/components/LoadingSpinner";
+import Button from "@/components/Button";
+import Input from "@/components/Input";
+import TabGroup from "@/components/TabGroup";
 import { AuthMode } from "@/types/ui";
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/;
 const MIN_USERNAME_LENGTH = 3;
 const MAX_USERNAME_LENGTH = 20;
 const MIN_PASSWORD_LENGTH = 8;
+
+const AUTH_TABS: { value: AuthMode; label: string }[] = [
+  { value: "login", label: "Log in" },
+  { value: "register", label: "Register" },
+];
 
 function validateUsername(value: string): string | null {
   if (value.length < MIN_USERNAME_LENGTH) {
@@ -37,13 +44,6 @@ function validatePassword(value: string): string | null {
   }
   return null;
 }
-
-const TAB_CLASS = (active: boolean) =>
-  `flex-1 rounded-lg py-2 text-sm font-semibold transition ${
-    active
-      ? "bg-indigo-600 text-white shadow"
-      : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-  }`;
 
 export default function AuthPage() {
   const navigate = useNavigate();
@@ -124,9 +124,6 @@ export default function AuthPage() {
     }
   };
 
-  const inputClass =
-    "w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-3 text-gray-900 placeholder-gray-400 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500";
-
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4 text-gray-900 dark:bg-gray-950 dark:text-white">
       <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-xl dark:bg-gray-900">
@@ -134,110 +131,65 @@ export default function AuthPage() {
           Tic-Tac-Toe
         </h1>
 
-        <div className="mx-auto mt-4 mb-6 flex gap-2 rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
-          <button
-            type="button"
-            onClick={() => switchMode("login")}
-            className={TAB_CLASS(mode === "login")}
-          >
-            Log in
-          </button>
-          <button
-            type="button"
-            onClick={() => switchMode("register")}
-            className={TAB_CLASS(mode === "register")}
-          >
-            Register
-          </button>
+        <div className="mx-auto mt-4 mb-6">
+          <TabGroup
+            options={AUTH_TABS}
+            value={mode}
+            onChange={switchMode}
+          />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label
-              htmlFor="email"
-              className="mb-1 block text-sm font-medium text-gray-600 dark:text-gray-300"
-            >
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                if (error) clearError();
-              }}
-              onBlur={() => markTouched("email")}
-              placeholder="you@example.com"
-              autoComplete="email"
-              autoFocus
-              disabled={isLoading}
-              className={inputClass}
-            />
-            {emailError && (
-              <p className="mt-1 text-sm text-red-500 dark:text-red-400">
-                {emailError}
-              </p>
-            )}
-          </div>
+          <Input
+            id="email"
+            type="email"
+            label="Email"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (error) clearError();
+            }}
+            onBlur={() => markTouched("email")}
+            placeholder="you@example.com"
+            autoComplete="email"
+            autoFocus
+            disabled={isLoading}
+            error={emailError}
+          />
 
-          <div>
-            <label
-              htmlFor="password"
-              className="mb-1 block text-sm font-medium text-gray-600 dark:text-gray-300"
-            >
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                if (error) clearError();
-              }}
-              onBlur={() => markTouched("password")}
-              placeholder="Min 8 characters"
-              autoComplete={isRegister ? "new-password" : "current-password"}
-              disabled={isLoading}
-              className={inputClass}
-            />
-            {passwordError && (
-              <p className="mt-1 text-sm text-red-500 dark:text-red-400">
-                {passwordError}
-              </p>
-            )}
-          </div>
+          <Input
+            id="password"
+            type="password"
+            label="Password"
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (error) clearError();
+            }}
+            onBlur={() => markTouched("password")}
+            placeholder="Min 8 characters"
+            autoComplete={isRegister ? "new-password" : "current-password"}
+            disabled={isLoading}
+            error={passwordError}
+          />
 
           {isRegister && (
-            <div>
-              <label
-                htmlFor="username"
-                className="mb-1 block text-sm font-medium text-gray-600 dark:text-gray-300"
-              >
-                Username
-              </label>
-              <input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => {
-                  setUsername(e.target.value);
-                  if (error) clearError();
-                }}
-                onBlur={() => markTouched("username")}
-                placeholder="e.g. player_one"
-                autoComplete="username"
-                disabled={isLoading}
-                className={inputClass}
-                maxLength={MAX_USERNAME_LENGTH}
-              />
-              {usernameError && (
-                <p className="mt-1 text-sm text-red-500 dark:text-red-400">
-                  {usernameError}
-                </p>
-              )}
-            </div>
+            <Input
+              id="username"
+              type="text"
+              label="Username"
+              value={username}
+              onChange={(e) => {
+                setUsername(e.target.value);
+                if (error) clearError();
+              }}
+              onBlur={() => markTouched("username")}
+              placeholder="e.g. player_one"
+              autoComplete="username"
+              disabled={isLoading}
+              maxLength={MAX_USERNAME_LENGTH}
+              error={usernameError}
+            />
           )}
 
           {error &&
@@ -249,22 +201,16 @@ export default function AuthPage() {
               </div>
             )}
 
-          <button
+          <Button
             type="submit"
             disabled={!canSubmit || isLoading}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-3 font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+            fullWidth
+            size="lg"
+            loading={isLoading}
+            loadingText={isRegister ? "Creating account..." : "Logging in..."}
           >
-            {isLoading ? (
-              <>
-                <LoadingSpinner />
-                {isRegister ? "Creating account..." : "Logging in..."}
-              </>
-            ) : isRegister ? (
-              "Register"
-            ) : (
-              "Log in"
-            )}
-          </button>
+            {isRegister ? "Register" : "Log in"}
+          </Button>
         </form>
       </div>
     </div>

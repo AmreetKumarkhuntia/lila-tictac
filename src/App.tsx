@@ -7,6 +7,7 @@ import AuthPage from "@/pages/AuthPage";
 import HomePage from "@/pages/HomePage";
 import GamePage from "@/pages/GamePage";
 import LeaderboardPage from "@/pages/LeaderboardPage";
+import Button from "@/components/Button";
 import ToastContainer from "@/components/ToastContainer";
 import type {
   ErrorBoundaryProps,
@@ -43,15 +44,14 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
           <p className="max-w-md text-center text-sm text-gray-500 dark:text-gray-400">
             {this.state.error?.message || "An unexpected error occurred."}
           </p>
-          <button
+          <Button
             onClick={() => {
               this.setState({ hasError: false, error: null });
               window.location.href = "/home";
             }}
-            className="rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
           >
             Return to Home
-          </button>
+          </Button>
         </div>
       );
     }

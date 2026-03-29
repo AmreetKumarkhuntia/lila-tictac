@@ -6,9 +6,16 @@ import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { useAuthStore } from "@/store/authStore";
 import { useGameStore } from "@/store/gameStore";
 import { useUiStore } from "@/store/uiStore";
-import PrivateMatchModal from "@/components/PrivateMatchModal";
+import Button from "@/components/Button";
+import TabGroup from "@/components/TabGroup";
+import PrivateMatchModal from "@/sections/PrivateMatchModal";
 import { SunIcon, MoonIcon } from "@/components/icons";
 import type { GameMode } from "@/types/game";
+
+const MODE_TABS: { value: GameMode; label: string }[] = [
+  { value: "classic", label: "Classic" },
+  { value: "timed", label: "Timed (30s)" },
+];
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -37,9 +44,10 @@ export default function HomePage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4 text-gray-900 dark:bg-gray-950 dark:text-white">
       <div className="relative w-full max-w-sm rounded-2xl bg-white p-8 shadow-xl dark:bg-gray-900">
-        <button
+        <Button
+          variant="icon"
           onClick={toggleTheme}
-          className="absolute right-4 top-4 rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+          className="absolute right-4 top-4"
           title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
           aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
         >
@@ -48,7 +56,7 @@ export default function HomePage() {
           ) : (
             <MoonIcon className="h-5 w-5" />
           )}
-        </button>
+        </Button>
 
         <h1 className="mb-1 text-center text-3xl font-bold tracking-tight">
           Tic-Tac-Toe
@@ -84,49 +92,28 @@ export default function HomePage() {
         )}
 
         <div className="space-y-3">
-          <div className="flex rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
-            <button
-              onClick={() => setSelectedMode("classic")}
-              disabled={matchmakingStatus !== "idle"}
-              className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition ${
-                selectedMode === "classic"
-                  ? "bg-white text-gray-900 shadow dark:bg-gray-700 dark:text-white"
-                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              } disabled:cursor-not-allowed`}
-            >
-              Classic
-            </button>
-            <button
-              onClick={() => setSelectedMode("timed")}
-              disabled={matchmakingStatus !== "idle"}
-              className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition ${
-                selectedMode === "timed"
-                  ? "bg-white text-gray-900 shadow dark:bg-gray-700 dark:text-white"
-                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              } disabled:cursor-not-allowed`}
-            >
-              Timed (30s)
-            </button>
-          </div>
+          <TabGroup
+            options={MODE_TABS}
+            value={selectedMode}
+            onChange={setSelectedMode}
+            disabled={matchmakingStatus !== "idle"}
+          />
 
-          <button
+          <Button
             onClick={handleQuickPlay}
             disabled={matchmakingStatus === "matched"}
-            className={`flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 font-semibold text-white transition ${
+            fullWidth
+            size="lg"
+            loading={matchmakingStatus === "searching"}
+            loadingText="Cancel Search"
+            className={
               matchmakingStatus === "searching"
                 ? "bg-red-500 hover:bg-red-600"
-                : "bg-indigo-600 hover:bg-indigo-700"
-            } disabled:cursor-not-allowed disabled:opacity-50`}
+                : ""
+            }
           >
-            {matchmakingStatus === "searching" && (
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-            )}
-            {matchmakingStatus === "searching"
-              ? "Cancel Search"
-              : matchmakingStatus === "matched"
-                ? "Match Found!"
-                : "Quick Play"}
-          </button>
+            {matchmakingStatus === "matched" ? "Match Found!" : "Quick Play"}
+          </Button>
 
           {matchmakingStatus === "searching" && (
             <p className="text-center text-xs text-gray-400 dark:text-gray-500">
@@ -134,20 +121,24 @@ export default function HomePage() {
             </p>
           )}
 
-          <button
+          <Button
+            variant="secondary"
             onClick={() => setShowPrivateModal(true)}
             disabled={matchmakingStatus !== "idle"}
-            className="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-3 font-semibold text-gray-900 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700"
+            fullWidth
+            size="lg"
           >
             Private Match
-          </button>
+          </Button>
 
-          <button
+          <Button
+            variant="secondary"
             onClick={() => navigate("/leaderboard")}
-            className="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-3 font-semibold text-gray-900 transition hover:bg-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700"
+            fullWidth
+            size="lg"
           >
             Leaderboard
-          </button>
+          </Button>
         </div>
 
         {/* Top-3 leaderboard preview */}
@@ -180,12 +171,9 @@ export default function HomePage() {
         )}
 
         <div className="mt-8 border-t border-gray-200 pt-4 dark:border-gray-800">
-          <button
-            onClick={handleLogout}
-            className="w-full rounded-lg px-4 py-2 text-sm text-gray-400 transition hover:text-red-500 dark:hover:text-red-400"
-          >
+          <Button variant="ghost" onClick={handleLogout} fullWidth size="sm">
             Log out
-          </button>
+          </Button>
         </div>
       </div>
 

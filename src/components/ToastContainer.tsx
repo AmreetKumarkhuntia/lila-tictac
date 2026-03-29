@@ -1,4 +1,5 @@
 import { useUiStore } from "@/store/uiStore";
+import Button from "@/components/Button";
 import { XIcon } from "@/components/icons";
 import type { ToastType } from "@/types/ui";
 
@@ -28,13 +29,14 @@ export default function ToastContainer() {
           role="alert"
         >
           <p className="flex-1 text-sm font-medium">{toast.message}</p>
-          <button
+          <Button
+            variant="icon"
             onClick={() => removeToast(toast.id)}
-            className="shrink-0 text-current opacity-60 transition-opacity hover:opacity-100"
+            className="shrink-0 p-0 text-current opacity-60 hover:bg-transparent hover:opacity-100 hover:text-current"
             aria-label="Dismiss"
           >
             <XIcon className="h-4 w-4" />
-          </button>
+          </Button>
         </div>
       ))}
     </div>
