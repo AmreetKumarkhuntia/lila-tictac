@@ -6,3 +6,5 @@ export interface Toast {
   message: string;
   type: ToastType;
 }
+
+export type AuthMode = "login" | "register";
